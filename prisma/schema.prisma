@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Better Auth required models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // GrantSync custom fields
+  role          String    @default("partner") // admin | partner | viewer
+  organizationId String?
+  interests     String?   // JSON array: ["Arts", "Healthcare", "Seniors"]
+  targetPopulation String?
+  minFunding    Int?
+  
+  sessions      Session[]
+  accounts      Account[]
+  trackedGrants TrackedGrant[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+}
+
+// GrantSync specific models
+model Grant {
+  id          String   @id @default(cuid())
+  title       String
+  agency      String
+  amount      String   // e.g., "$50,000 - $100,000"
+  amountMin   Int?     // For filtering
+  amountMax   Int?     // For filtering
+  deadline    DateTime
+  description String
+  url         String?
+  tags        String   // JSON array: ["Arts", "Seniors", "Healthcare"]
+  eligibility String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  trackedBy   TrackedGrant[]
+}
+
+model TrackedGrant {
+  id        String   @id @default(cuid())
+  userId    String
+  grantId   String
+  status    String   @default("new") // new | reviewing | applied | rejected
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grant     Grant    @relation(fields: [grantId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, grantId])
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  parentId  String?  // For Tsao parent-child hierarchy
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
