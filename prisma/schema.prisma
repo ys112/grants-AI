@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // Better Auth required models
@@ -75,13 +75,23 @@ model Grant {
   title       String
   agency      String
   amount      String   // e.g., "$50,000 - $100,000"
-  amountMin   Int?     // For filtering
-  amountMax   Int?     // For filtering
+  amountMin   Int?     // For filtering (parsed from amount)
+  amountMax   Int?     // For filtering (parsed from amount)
   deadline    DateTime
-  description String
+  description String   @db.Text
   url         String?
   tags        String   // JSON array: ["Arts", "Seniors", "Healthcare"]
-  eligibility String?
+  
+  // Enhanced fields for filtering
+  issueArea   String?  // Primary issue area: arts, healthcare, seniors, etc.
+  eligibilityCriteria String? @db.Text // JSON array of eligibility requirements
+  kpis        String?  @db.Text // JSON array of expected KPIs/outcomes
+  grantDuration Int?   // Duration in months
+  
+  // Scraping metadata
+  sourceId    String?  @unique // Unique ID from source for deduplication
+  scrapedAt   DateTime? // When this grant was last scraped
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -93,7 +103,7 @@ model TrackedGrant {
   userId    String
   grantId   String
   status    String   @default("new") // new | reviewing | applied | rejected
-  notes     String?
+  notes     String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
