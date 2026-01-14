@@ -1,19 +1,17 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { grants } from '@/db/schema';
+import { asc } from 'drizzle-orm';
 
-// Ensure Node.js runtime for Prisma database access
+// Ensure Node.js runtime for database access
 export const runtime = 'nodejs';
 
 export async function GET() {
   try {
-    const grants = await prisma.grant.findMany({
-      orderBy: {
-        deadline: 'asc',
-      },
-    });
+    const allGrants = await db.select().from(grants).orderBy(asc(grants.deadline));
 
     // Transform grants for API response
-    const grantsWithParsedTags = grants.map((grant) => ({
+    const grantsWithParsedTags = allGrants.map((grant) => ({
       ...grant,
       tags: JSON.parse(grant.tags),
       deadline: grant.deadline.toISOString(),

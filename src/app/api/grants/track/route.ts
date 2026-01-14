@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { trackedGrants, grants } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { eq, and } from 'drizzle-orm';
 
-// Ensure Node.js runtime for Prisma database access
+// Ensure Node.js runtime for database access
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
@@ -29,34 +31,39 @@ export async function POST(request: Request) {
     }
 
     // Check if already tracked
-    const existing = await prisma.trackedGrant.findUnique({
-      where: {
-        userId_grantId: {
-          userId: session.user.id,
-          grantId,
-        },
-      },
-    });
+    const existing = await db.select()
+      .from(trackedGrants)
+      .where(
+        and(
+          eq(trackedGrants.userId, session.user.id),
+          eq(trackedGrants.grantId, grantId)
+        )
+      )
+      .limit(1);
 
-    if (existing) {
+    if (existing.length > 0) {
       return NextResponse.json(
         { error: 'Grant is already tracked' },
         { status: 400 }
       );
     }
 
-    const trackedGrant = await prisma.trackedGrant.create({
-      data: {
+    // Create tracked grant
+    const [trackedGrant] = await db.insert(trackedGrants)
+      .values({
         userId: session.user.id,
         grantId,
         status: 'new',
-      },
-      include: {
-        grant: true,
-      },
-    });
+      })
+      .returning();
 
-    return NextResponse.json(trackedGrant, { status: 201 });
+    // Fetch the associated grant
+    const [grant] = await db.select()
+      .from(grants)
+      .where(eq(grants.id, grantId))
+      .limit(1);
+
+    return NextResponse.json({ ...trackedGrant, grant }, { status: 201 });
   } catch (error) {
     console.error('Error tracking grant:', error);
     return NextResponse.json(
@@ -89,14 +96,13 @@ export async function DELETE(request: Request) {
       );
     }
 
-    await prisma.trackedGrant.delete({
-      where: {
-        userId_grantId: {
-          userId: session.user.id,
-          grantId,
-        },
-      },
-    });
+    await db.delete(trackedGrants)
+      .where(
+        and(
+          eq(trackedGrants.userId, session.user.id),
+          eq(trackedGrants.grantId, grantId)
+        )
+      );
 
     return NextResponse.json({ success: true });
   } catch (error) {

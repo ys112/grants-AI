@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -19,6 +19,7 @@ import {
   Divider,
   Stack,
   InputAdornment,
+  Skeleton,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { useSession } from '@/lib/auth-client';
@@ -47,16 +48,94 @@ const populationOptions = [
 
 export default function SettingsPage() {
   const { data: session } = useSession();
-  const [interests, setInterests] = useState<string[]>(['Seniors', 'Healthcare']);
-  const [targetPopulation, setTargetPopulation] = useState('Seniors (60+)');
-  const [minFunding, setMinFunding] = useState('25000');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [targetPopulation, setTargetPopulation] = useState('');
+  const [minFunding, setMinFunding] = useState('');
   const [savedMessage, setSavedMessage] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch user preferences
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        setLoading(true);
+        const startTime = performance.now();
+        
+        const response = await fetch('/api/user/preferences');
+        
+        if (response.ok) {
+          const data = await response.json();
+          const endTime = performance.now();
+          console.log(`[Performance] Preferences API: ${(endTime - startTime).toFixed(2)}ms`);
+          
+          setInterests(data.interests || []);
+          setTargetPopulation(data.targetPopulation || '');
+          setMinFunding(data.minFunding?.toString() || '');
+        }
+      } catch (err) {
+        console.error('Error fetching preferences:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session?.user) {
+      fetchPreferences();
+    } else {
+      setLoading(false);
+    }
+  }, [session]);
 
   const handleSave = async () => {
-    // In production, this would call the API to save settings
-    console.log('Saving settings:', { interests, targetPopulation, minFunding });
-    setSavedMessage(true);
+    try {
+      setSaving(true);
+      setError(null);
+      const startTime = performance.now();
+      
+      const response = await fetch('/api/user/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          interests,
+          targetPopulation,
+          minFunding,
+        }),
+      });
+
+      const endTime = performance.now();
+      console.log(`[Performance] Save Preferences: ${(endTime - startTime).toFixed(2)}ms`);
+
+      if (!response.ok) {
+        throw new Error('Failed to save settings');
+      }
+
+      setSavedMessage(true);
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      setError('Failed to save settings. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <Box>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            Settings
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Configure your profile to get personalized grant recommendations
+          </Typography>
+        </Box>
+        <Skeleton variant="rounded" height={200} sx={{ mb: 3 }} />
+        <Skeleton variant="rounded" height={300} />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -69,6 +148,12 @@ export default function SettingsPage() {
           Configure your profile to get personalized grant recommendations
         </Typography>
       </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
       {/* Profile Section */}
       <Card sx={{ mb: 3 }}>
@@ -186,8 +271,9 @@ export default function SettingsPage() {
           startIcon={<SaveIcon />}
           onClick={handleSave}
           size="large"
+          disabled={saving}
         >
-          Save Settings
+          {saving ? 'Saving...' : 'Save Settings'}
         </Button>
       </Box>
 

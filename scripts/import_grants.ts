@@ -1,21 +1,24 @@
 /**
  * Import Scraped Grants into Database
  * 
- * Reads grants from data/grants.json and imports them into the Prisma database.
+ * Reads grants from data/grants.json and imports them into the Drizzle database.
  * Uses title-based deduplication (checks if grant with same title exists).
  * 
  * Usage: npx tsx scripts/import_grants.ts
  */
 
 import 'dotenv/config';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import { PrismaClient } from '@prisma/client';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as schema from '../src/db/schema';
 
-// Initialize Prisma with better-sqlite3 adapter
-const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL || 'file:./dev.db' });
-const prisma = new PrismaClient({ adapter });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL!,
+});
+
+const db = drizzle(pool, { schema });
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'grants.json');
 
@@ -51,10 +54,11 @@ async function importGrants() {
   console.log(`📄 Found ${grants.length} grants in data file`);
 
   // Clear existing grants first (for demo purposes)
-  await prisma.trackedGrant.deleteMany();
-  await prisma.grant.deleteMany();
+  await db.delete(schema.trackedGrants);
+  await db.delete(schema.grants);
   console.log('🗑️ Cleared existing grants');
 
+  const now = new Date();
   let imported = 0;
   let skipped = 0;
 
@@ -71,11 +75,11 @@ async function importGrants() {
         url: grant.url || null,
         tags: JSON.stringify(grant.tags || []),
         eligibilityCriteria: grant.eligibility ? JSON.stringify(grant.eligibility) : null,
+        createdAt: now,
+        updatedAt: now,
       };
 
-      await prisma.grant.create({
-        data: grantData,
-      });
+      await db.insert(schema.grants).values(grantData);
       imported++;
       console.log(`✅ Imported: ${grant.title.substring(0, 50)}...`);
     } catch (error) {
@@ -97,7 +101,7 @@ async function main() {
     console.error('Import failed:', error);
     process.exit(1);
   } finally {
-    await prisma.$disconnect();
+    await pool.end();
   }
 }
 

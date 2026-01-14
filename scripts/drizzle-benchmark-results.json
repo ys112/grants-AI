@@ -1,0 +1,115 @@
+{
+  "orm": "drizzle",
+  "version": "0.45.1",
+  "timestamp": "2026-01-14T06:11:43.996Z",
+  "dataStats": {
+    "grants": 0,
+    "users": 3,
+    "trackedGrants": 0
+  },
+  "benchmarks": [
+    {
+      "name": "grant.findMany (list all)",
+      "iterations": 10,
+      "avgMs": 7.116999999999962,
+      "minMs": 6.809999999999945,
+      "maxMs": 7.5779999999999745,
+      "totalMs": 71.16999999999962
+    },
+    {
+      "name": "grant.findMany (with take limit 10)",
+      "iterations": 10,
+      "avgMs": 6.804079999999931,
+      "minMs": 6.447299999999814,
+      "maxMs": 7.006799999999657,
+      "totalMs": 68.04079999999931
+    },
+    {
+      "name": "grant.findMany (filtered by issueArea)",
+      "iterations": 10,
+      "avgMs": 7.480320000000029,
+      "minMs": 6.5965000000001055,
+      "maxMs": 13.249699999999848,
+      "totalMs": 74.80320000000029
+    },
+    {
+      "name": "grant.count",
+      "iterations": 10,
+      "avgMs": 6.34975999999997,
+      "minMs": 5.9737999999997555,
+      "maxMs": 6.690700000000106,
+      "totalMs": 63.49759999999969
+    },
+    {
+      "name": "user.findMany",
+      "iterations": 10,
+      "avgMs": 6.671059999999943,
+      "minMs": 6.397500000000036,
+      "maxMs": 7.012400000000071,
+      "totalMs": 66.71059999999943
+    },
+    {
+      "name": "user.findFirst with sessions",
+      "iterations": 10,
+      "avgMs": 7.708869999999888,
+      "minMs": 7.319700000000012,
+      "maxMs": 8.109899999999925,
+      "totalMs": 77.08869999999888
+    },
+    {
+      "name": "trackedGrant.findMany with include",
+      "iterations": 10,
+      "avgMs": 7.468699999999944,
+      "minMs": 7.227800000000116,
+      "maxMs": 7.7190999999997985,
+      "totalMs": 74.68699999999944
+    },
+    {
+      "name": "trackedGrant.findMany (user grants)",
+      "iterations": 10,
+      "avgMs": 13.830509999999958,
+      "minMs": 13.410999999999603,
+      "maxMs": 14.512700000000223,
+      "totalMs": 138.30509999999958
+    },
+    {
+      "name": "grant.create",
+      "iterations": 1,
+      "avgMs": 15.73259999999982,
+      "minMs": 15.73259999999982,
+      "maxMs": 15.73259999999982,
+      "totalMs": 15.73259999999982
+    },
+    {
+      "name": "grant.delete",
+      "iterations": 1,
+      "avgMs": 7.737799999999879,
+      "minMs": 7.737799999999879,
+      "maxMs": 7.737799999999879,
+      "totalMs": 7.737799999999879
+    },
+    {
+      "name": "grant.groupBy (by issueArea)",
+      "iterations": 10,
+      "avgMs": 6.510190000000011,
+      "minMs": 5.9013999999997395,
+      "maxMs": 7.06439999999975,
+      "totalMs": 65.10190000000011
+    },
+    {
+      "name": "grant.aggregate (amount stats)",
+      "iterations": 10,
+      "avgMs": 6.538580000000048,
+      "minMs": 6.370400000000245,
+      "maxMs": 6.725399999999809,
+      "totalMs": 65.38580000000047
+    }
+  ],
+  "summary": {
+    "totalAvgMs": 99.94946999999938,
+    "slowestQuery": "grant.create",
+    "slowestAvgMs": 15.73259999999982,
+    "fastestQuery": "grant.count",
+    "fastestAvgMs": 6.34975999999997
+  }
+}

@@ -1,11 +1,19 @@
-import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { hashPassword } from 'better-auth/crypto';
+/**
+ * Seed script for GrantSync using Drizzle ORM
+ * Run: npm run db:seed
+ */
 
-// Prisma 7 uses driver adapters for database connections
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+import 'dotenv/config';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+import { hashPassword } from 'better-auth/crypto';
+import * as schema from '../src/db/schema';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL!,
+});
+
+const db = drizzle(pool, { schema });
 
 // Demo users configuration
 const demoUsers = [
@@ -32,37 +40,42 @@ const demoUsers = [
 async function main() {
   console.log('🌱 Seeding database...');
 
+  const now = new Date();
+
   // Clear existing data (order matters for foreign keys)
-  await prisma.trackedGrant.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.verification.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.grant.deleteMany();
-  await prisma.organization.deleteMany();
+  await db.delete(schema.trackedGrants);
+  await db.delete(schema.sessions);
+  await db.delete(schema.accounts);
+  await db.delete(schema.verifications);
+  await db.delete(schema.users);
+  await db.delete(schema.grants);
+  await db.delete(schema.organizations);
 
   console.log('🗑️ Cleared existing data');
 
   // Create organizations
-  const tsaoHQ = await prisma.organization.create({
-    data: {
+  const [tsaoHQ] = await db.insert(schema.organizations)
+    .values({
       name: 'Tsao Foundation',
       slug: 'tsao-hq',
-    },
-  });
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
 
-  const huaMei = await prisma.organization.create({
-    data: {
+  const [huaMei] = await db.insert(schema.organizations)
+    .values({
       name: 'Hua Mei Centre for Successful Ageing',
       slug: 'hua-mei-center',
       parentId: tsaoHQ.id,
-    },
-  });
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
 
   console.log('✅ Created organizations');
 
   // Create demo users directly in the database with hashed passwords
-  // Better Auth uses bcrypt for password hashing
   for (const userData of demoUsers) {
     const orgId = userData.email.includes('huamei') ? huaMei.id : tsaoHQ.id;
     
@@ -70,26 +83,28 @@ async function main() {
     const hashedPassword = await hashPassword(userData.password);
     
     // Create the user
-    const user = await prisma.user.create({
-      data: {
+    const [user] = await db.insert(schema.users)
+      .values({
         email: userData.email,
         name: userData.name,
         role: userData.role,
         organizationId: orgId,
         emailVerified: true,
-      },
-    });
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
 
     // Create the credential account with hashed password
-    // Better Auth stores password credentials in the Account table
-    await prisma.account.create({
-      data: {
+    await db.insert(schema.accounts)
+      .values({
         userId: user.id,
         accountId: user.id,
         providerId: 'credential',
         password: hashedPassword,
-      },
-    });
+        createdAt: now,
+        updatedAt: now,
+      });
 
     console.log(`✅ Created user: ${userData.email} (password: ${userData.password})`);
   }
@@ -109,5 +124,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    await pool.end();
   });

@@ -15,99 +15,85 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import GrantCard, { Grant } from '@/components/GrantCard';
 
-// Sample grants data for MVP demo
-const sampleGrants: Grant[] = [
-  {
-    id: '1',
-    title: 'Community Arts Programme Grant',
-    agency: 'National Arts Council',
-    amount: '$50,000 - $100,000',
-    deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Supporting community-based arts programmes that promote cultural engagement and social cohesion among seniors and intergenerational groups.',
-    tags: ['Arts', 'Seniors', 'Community'],
-    matchScore: 92,
-  },
-  {
-    id: '2',
-    title: 'Healthcare Innovation Fund',
-    agency: 'Ministry of Health',
-    amount: '$100,000 - $250,000',
-    deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Funding for innovative healthcare solutions targeting aging population needs, including telemedicine and home care services.',
-    tags: ['Healthcare', 'Innovation', 'Seniors', 'Technology'],
-    matchScore: 88,
-  },
-  {
-    id: '3',
-    title: 'Social Enterprise Development Grant',
-    agency: 'National Council of Social Service',
-    amount: '$25,000 - $75,000',
-    deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Supporting nonprofits in developing sustainable social enterprise models to support their mission delivery.',
-    tags: ['Social Enterprise', 'Sustainability', 'Capacity Building'],
-    matchScore: 75,
-  },
-  {
-    id: '4',
-    title: 'Digital Inclusion Programme',
-    agency: 'Infocomm Media Development Authority',
-    amount: '$30,000 - $80,000',
-    deadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Bridging the digital divide for seniors through technology training and device accessibility programmes.',
-    tags: ['Technology', 'Seniors', 'Digital Literacy', 'Inclusion'],
-    matchScore: 85,
-  },
-  {
-    id: '5',
-    title: 'Volunteer Management Excellence Grant',
-    agency: "People's Association",
-    amount: '$15,000 - $40,000',
-    deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Enhancing volunteer management capabilities and building sustainable volunteering programmes in community organizations.',
-    tags: ['Volunteers', 'Community', 'Capacity Building'],
-    matchScore: 62,
-  },
-  {
-    id: '6',
-    title: 'Mental Wellness Initiative Fund',
-    agency: 'Agency for Integrated Care',
-    amount: '$50,000 - $120,000',
-    deadline: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Supporting mental wellness programmes for seniors, including counseling services, support groups, and community outreach.',
-    tags: ['Healthcare', 'Mental Health', 'Seniors', 'Wellness'],
-    matchScore: 90,
-  },
-];
-
 const filterTags = ['All', 'Seniors', 'Healthcare', 'Arts', 'Technology', 'Community'];
 
 export default function DashboardPage() {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('All');
   const [trackedIds, setTrackedIds] = useState<Set<string>>(new Set());
 
+  // Fetch grants from API
   useEffect(() => {
-    // Simulate API call
-    const timer = setTimeout(() => {
-      setGrants(sampleGrants);
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    const fetchGrants = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const startTime = performance.now();
+        
+        const response = await fetch('/api/grants');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch grants');
+        }
+        
+        const data = await response.json();
+        const endTime = performance.now();
+        
+        console.log(`[Performance] Grants API: ${(endTime - startTime).toFixed(2)}ms`);
+        
+        // Add matchScore for demo (would come from backend in production)
+        const grantsWithScore = data.map((grant: Grant, index: number) => ({
+          ...grant,
+          matchScore: 95 - (index * 5) + Math.floor(Math.random() * 10),
+        }));
+        
+        setGrants(grantsWithScore);
+      } catch (err) {
+        console.error('Error fetching grants:', err);
+        setError('Failed to load grants. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGrants();
   }, []);
 
   const handleTrack = async (grantId: string) => {
-    // In production, this would call the API
-    setTrackedIds((prev) => new Set([...prev, grantId]));
+    try {
+      const response = await fetch('/api/grants/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grantId }),
+      });
+      
+      if (response.ok) {
+        setTrackedIds((prev) => new Set([...prev, grantId]));
+      }
+    } catch (error) {
+      console.error('Error tracking grant:', error);
+    }
   };
 
   const handleUntrack = async (grantId: string) => {
-    setTrackedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(grantId);
-      return next;
-    });
+    try {
+      const response = await fetch(`/api/grants/track?grantId=${grantId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setTrackedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(grantId);
+          return next;
+        });
+      }
+    } catch (error) {
+      console.error('Error untracking grant:', error);
+    }
   };
 
   const filteredGrants = grants
@@ -164,8 +150,15 @@ export default function DashboardPage() {
         </Stack>
       </Box>
 
+      {/* Error state */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
       {/* Results count */}
-      {!loading && (
+      {!loading && !error && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Showing {filteredGrants.length} grant{filteredGrants.length !== 1 ? 's' : ''}
           {searchQuery && ` matching "${searchQuery}"`}

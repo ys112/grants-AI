@@ -1,0 +1,247 @@
+/**
+ * Prisma ORM Performance Profiler
+ * Run: npx tsx scripts/profile-prisma.ts
+ * 
+ * This script benchmarks common database queries to establish
+ * performance baselines before migrating to Drizzle.
+ */
+
+import { PrismaClient } from '../src/generated/prisma';
+import { PrismaPg } from '@prisma/adapter-pg';
+import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
+
+dotenv.config();
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
+
+interface BenchmarkResult {
+  name: string;
+  iterations: number;
+  avgMs: number;
+  minMs: number;
+  maxMs: number;
+  totalMs: number;
+}
+
+const results: BenchmarkResult[] = [];
+
+async function benchmark(name: string, fn: () => Promise<unknown>, iterations = 10): Promise<BenchmarkResult> {
+  const times: number[] = [];
+  
+  // Warmup run
+  await fn();
+  
+  for (let i = 0; i < iterations; i++) {
+    const start = performance.now();
+    await fn();
+    const end = performance.now();
+    times.push(end - start);
+  }
+  
+  const result = {
+    name,
+    iterations,
+    avgMs: times.reduce((a, b) => a + b, 0) / times.length,
+    minMs: Math.min(...times),
+    maxMs: Math.max(...times),
+    totalMs: times.reduce((a, b) => a + b, 0),
+  };
+  
+  results.push(result);
+  console.log(`✅ ${name}: avg=${result.avgMs.toFixed(2)}ms, min=${result.minMs.toFixed(2)}ms, max=${result.maxMs.toFixed(2)}ms`);
+  
+  return result;
+}
+
+async function main() {
+  console.log('🔍 Prisma ORM Performance Profiler');
+  console.log('===================================\n');
+  console.log(`Database: ${process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'connected'}`);
+  console.log(`Timestamp: ${new Date().toISOString()}\n`);
+  
+  // First, let's get some stats about the data
+  const grantCount = await prisma.grant.count();
+  const userCount = await prisma.user.count();
+  const trackedGrantCount = await prisma.trackedGrant.count();
+  
+  console.log('📊 Data Stats:');
+  console.log(`   Grants: ${grantCount}`);
+  console.log(`   Users: ${userCount}`);
+  console.log(`   Tracked Grants: ${trackedGrantCount}\n`);
+  
+  console.log('🏃 Running Benchmarks...\n');
+  
+  // ===== GRANTS QUERIES =====
+  console.log('--- Grants Queries ---');
+  
+  await benchmark('grant.findMany (list all)', async () => {
+    return prisma.grant.findMany({
+      orderBy: { deadline: 'asc' },
+    });
+  });
+  
+  await benchmark('grant.findMany (with take limit 10)', async () => {
+    return prisma.grant.findMany({
+      orderBy: { deadline: 'asc' },
+      take: 10,
+    });
+  });
+  
+  await benchmark('grant.findMany (filtered by issueArea)', async () => {
+    return prisma.grant.findMany({
+      where: { issueArea: 'healthcare' },
+      orderBy: { deadline: 'asc' },
+    });
+  });
+  
+  await benchmark('grant.count', async () => {
+    return prisma.grant.count();
+  });
+  
+  // ===== USER QUERIES =====
+  console.log('\n--- User Queries ---');
+  
+  await benchmark('user.findMany', async () => {
+    return prisma.user.findMany();
+  });
+  
+  await benchmark('user.findFirst with sessions', async () => {
+    return prisma.user.findFirst({
+      include: {
+        sessions: true,
+        accounts: true,
+      },
+    });
+  });
+  
+  // ===== TRACKED GRANTS (Relations) =====
+  console.log('\n--- TrackedGrant Queries (Relations) ---');
+  
+  await benchmark('trackedGrant.findMany with include', async () => {
+    return prisma.trackedGrant.findMany({
+      include: {
+        grant: true,
+        user: true,
+      },
+    });
+  });
+  
+  await benchmark('trackedGrant.findMany (user grants)', async () => {
+    const user = await prisma.user.findFirst();
+    if (!user) return [];
+    return prisma.trackedGrant.findMany({
+      where: { userId: user.id },
+      include: { grant: true },
+    });
+  });
+  
+  // ===== WRITE OPERATIONS =====
+  console.log('\n--- Write Operations (Single Run) ---');
+  
+  // Create and delete a test grant
+  const createStart = performance.now();
+  const testGrant = await prisma.grant.create({
+    data: {
+      title: 'BENCHMARK_TEST_GRANT',
+      agency: 'Test Agency',
+      amount: '$10,000',
+      deadline: new Date(),
+      description: 'Benchmark test grant - will be deleted',
+      tags: '["test"]',
+    },
+  });
+  const createTime = performance.now() - createStart;
+  console.log(`✅ grant.create: ${createTime.toFixed(2)}ms`);
+  results.push({
+    name: 'grant.create',
+    iterations: 1,
+    avgMs: createTime,
+    minMs: createTime,
+    maxMs: createTime,
+    totalMs: createTime,
+  });
+  
+  const deleteStart = performance.now();
+  await prisma.grant.delete({
+    where: { id: testGrant.id },
+  });
+  const deleteTime = performance.now() - deleteStart;
+  console.log(`✅ grant.delete: ${deleteTime.toFixed(2)}ms`);
+  results.push({
+    name: 'grant.delete',
+    iterations: 1,
+    avgMs: deleteTime,
+    minMs: deleteTime,
+    maxMs: deleteTime,
+    totalMs: deleteTime,
+  });
+  
+  // ===== COMPLEX QUERIES =====
+  console.log('\n--- Complex/Aggregate Queries ---');
+  
+  await benchmark('grant.groupBy (by issueArea)', async () => {
+    return prisma.grant.groupBy({
+      by: ['issueArea'],
+      _count: true,
+    });
+  });
+  
+  await benchmark('grant.aggregate (amount stats)', async () => {
+    return prisma.grant.aggregate({
+      _avg: { amountMin: true, amountMax: true },
+      _max: { amountMax: true },
+      _min: { amountMin: true },
+    });
+  });
+  
+  // ===== SUMMARY =====
+  console.log('\n===================================');
+  console.log('📈 BENCHMARK SUMMARY');
+  console.log('===================================\n');
+  
+  // Sort by average time
+  const sortedResults = [...results].sort((a, b) => b.avgMs - a.avgMs);
+  
+  console.log('Slowest to Fastest:');
+  sortedResults.forEach((r, i) => {
+    console.log(`${i + 1}. ${r.name}: ${r.avgMs.toFixed(2)}ms avg`);
+  });
+  
+  const totalAvg = results.reduce((sum, r) => sum + r.avgMs, 0);
+  console.log(`\nTotal average time: ${totalAvg.toFixed(2)}ms`);
+  
+  // Save results to file
+  const reportData = {
+    orm: 'prisma',
+    version: '7.2.0',
+    timestamp: new Date().toISOString(),
+    dataStats: {
+      grants: grantCount,
+      users: userCount,
+      trackedGrants: trackedGrantCount,
+    },
+    benchmarks: results,
+    summary: {
+      totalAvgMs: totalAvg,
+      slowestQuery: sortedResults[0]?.name,
+      slowestAvgMs: sortedResults[0]?.avgMs,
+      fastestQuery: sortedResults[sortedResults.length - 1]?.name,
+      fastestAvgMs: sortedResults[sortedResults.length - 1]?.avgMs,
+    },
+  };
+  
+  const reportPath = path.join(__dirname, 'prisma-benchmark-results.json');
+  fs.writeFileSync(reportPath, JSON.stringify(reportData, null, 2));
+  console.log(`\n💾 Results saved to: ${reportPath}`);
+  
+  await prisma.$disconnect();
+}
+
+main().catch(async (e) => {
+  console.error('Benchmark failed:', e);
+  await prisma.$disconnect();
+  process.exit(1);
+});

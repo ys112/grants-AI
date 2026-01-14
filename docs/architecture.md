@@ -11,7 +11,7 @@ GrantSync is a modern web application designed to facilitate grant discovery and
 - **UI Component Library**: Material UI (MUI) v7
 - **Styling**: Emotion (CSS-in-JS) with a custom glassmorphism theme
 - **Authentication**: Better Auth
-- **Database**: PostgreSQL (Prisma ORM)
+- **Database**: PostgreSQL (Drizzle ORM)
 - **Infrastructure**: Vercel (Frontend/API) + Neon (Database)
 
 ## Data Architecture
