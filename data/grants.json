@@ -1,0 +1,259 @@
+[
+  {
+    "title": "Community Arts and Culture Grant",
+    "agency": "National Arts Council",
+    "amount": "$50,000 - $100,000",
+    "amountMin": 50000,
+    "amountMax": 100000,
+    "deadline": "2026-03-15T00:00:00",
+    "description": "Support for community-based arts programmes that promote cultural engagement and social cohesion among seniors and intergenerational groups.",
+    "url": "https://www.nac.gov.sg/support/funding",
+    "tags": [
+      "arts",
+      "seniors",
+      "community"
+    ],
+    "eligibility": [
+      "Registered NPOs in Singapore",
+      "Min 2 years operation",
+      "Arts-focused mission"
+    ],
+    "kpis": [
+      "Number of beneficiaries reached",
+      "Community engagement hours",
+      "Programme satisfaction rate"
+    ],
+    "scrapedAt": "2026-01-13T11:26:22.798700"
+  },
+  {
+    "title": "Healthcare Innovation Fund",
+    "agency": "Ministry of Health",
+    "amount": "$100,000 - $500,000",
+    "amountMin": 100000,
+    "amountMax": 500000,
+    "deadline": "2026-04-30T00:00:00",
+    "description": "Funding for innovative healthcare solutions targeting aging population needs, including telemedicine, home care services, and preventive health initiatives.",
+    "url": "https://www.moh.gov.sg/grants",
+    "tags": [
+      "healthcare",
+      "seniors",
+      "technology"
+    ],
+    "eligibility": [
+      "Healthcare institutions",
+      "Registered NPOs",
+      "Technology partners"
+    ],
+    "kpis": [
+      "Patients served",
+      "Health outcomes improved",
+      "Cost savings achieved"
+    ],
+    "scrapedAt": "2026-01-13T11:26:22.798711"
+  },
+  {
+    "title": "Digital Inclusion for Seniors",
+    "agency": "Infocomm Media Development Authority",
+    "amount": "$30,000 - $80,000",
+    "amountMin": 30000,
+    "amountMax": 80000,
+    "deadline": "2026-02-28T00:00:00",
+    "description": "Bridging the digital divide for seniors through technology training, device accessibility programmes, and digital literacy workshops.",
+    "url": "https://www.imda.gov.sg/seniors-go-digital",
+    "tags": [
+      "technology",
+      "seniors",
+      "education"
+    ],
+    "eligibility": [
+      "Registered charities",
+      "Senior activity centres",
+      "Community partners"
+    ],
+    "kpis": [
+      "Seniors trained",
+      "Digital adoption rate",
+      "Programme completion rate"
+    ],
+    "scrapedAt": "2026-01-13T11:26:22.798712"
+  },
+  {
+    "title": "Mental Wellness Initiative",
+    "agency": "Agency for Integrated Care",
+    "amount": "$50,000 - $150,000",
+    "amountMin": 50000,
+    "amountMax": 150000,
+    "deadline": "2026-03-31T00:00:00",
+    "description": "Supporting mental wellness programmes for seniors, including counseling services, support groups, befriending services, and community outreach.",
+    "url": "https://www.aic.sg/grants",
+    "tags": [
+      "healthcare",
+      "seniors",
+      "community"
+    ],
+    "eligibility": [
+      "AIC partner organizations",
+      "Mental health professionals",
+      "Community partners"
+    ],
+    "kpis": [
+      "Clients served",
+      "Wellbeing improvement scores",
+      "Community reach"
+    ],
+    "scrapedAt": "2026-01-13T11:26:22.798714"
+  },
+  {
+    "title": "Social Enterprise Development Grant",
+    "agency": "National Council of Social Service",
+    "amount": "$25,000 - $75,000",
+    "amountMin": 25000,
+    "amountMax": 75000,
+    "deadline": "2026-02-15T00:00:00",
+    "description": "Supporting nonprofits in developing sustainable social enterprise models to enhance financial sustainability and mission delivery.",
+    "url": "https://www.ncss.gov.sg/grants",
+    "tags": [
+      "community",
+      "education"
+    ],
+    "eligibility": [
+      "NCSS member organizations",
+      "IPC status",
+      "3+ years operation"
+    ],
+    "kpis": [
+      "Revenue generated",
+      "Jobs created",
+      "Social impact metrics"
+    ],
+    "scrapedAt": "2026-01-13T11:26:22.798715"
+  },
+  {
+    "title": "Volunteer Management Excellence",
+    "agency": "People's Association",
+    "amount": "$15,000 - $40,000",
+    "amountMin": 15000,
+    "amountMax": 40000,
+    "deadline": "2026-05-31T00:00:00",
+    "description": "Enhancing volunteer management capabilities and building sustainable volunteering programmes in community organizations.",
+    "url": "https://www.pa.gov.sg/grants",
+    "tags": [
+      "community"
+    ],
+    "eligibility": [
+      "Community-based organizations",
+      "Grassroots entities",
+      "NPOs"
+    ],
+    "kpis": [
+      "Volunteer hours contributed",
+      "Volunteer retention rate",
+      "Programme effectiveness"
+    ],
+    "scrapedAt": "2026-01-13T11:26:22.798717"
+  },
+  {
+    "title": "Active Ageing Programme Grant",
+    "agency": "Ministry of Social and Family Development",
+    "amount": "$20,000 - $60,000",
+    "amountMin": 20000,
+    "amountMax": 60000,
+    "deadline": "2026-04-15T00:00:00",
+    "description": "Promoting active ageing through physical activities, lifelong learning programmes, and social engagement opportunities for seniors.",
+    "url": "https://www.msf.gov.sg/grants",
+    "tags": [
+      "seniors",
+      "healthcare",
+      "education"
+    ],
+    "eligibility": [
+      "Senior activity centres",
+      "NPOs serving elderly",
+      "Community partners"
+    ],
+    "kpis": [
+      "Seniors engaged",
+      "Activity participation rate",
+      "Health improvement metrics"
+    ],
+    "scrapedAt": "2026-01-13T11:26:22.798718"
+  },
+  {
+    "title": "Intergenerational Bonding Fund",
+    "agency": "Community Development Council",
+    "amount": "$10,000 - $30,000",
+    "amountMin": 10000,
+    "amountMax": 30000,
+    "deadline": "2026-03-01T00:00:00",
+    "description": "Fostering stronger bonds between generations through joint activities, mentorship programmes, and community events.",
+    "url": "https://www.cdc.gov.sg/grants",
+    "tags": [
+      "community",
+      "seniors",
+      "youth"
+    ],
+    "eligibility": [
+      "Community organizations",
+      "Schools",
+      "Senior centres"
+    ],
+    "kpis": [
+      "Participants reached",
+      "Intergenerational interactions",
+      "Community cohesion metrics"
+    ],
+    "scrapedAt": "2026-01-13T11:26:22.798719"
+  },
+  {
+    "title": "Environmental Sustainability Grant",
+    "agency": "National Environment Agency",
+    "amount": "$40,000 - $120,000",
+    "amountMin": 40000,
+    "amountMax": 120000,
+    "deadline": "2026-04-01T00:00:00",
+    "description": "Supporting environmental sustainability initiatives including waste reduction, green practices, and community environmental education.",
+    "url": "https://www.nea.gov.sg/grants",
+    "tags": [
+      "environment",
+      "community",
+      "education"
+    ],
+    "eligibility": [
+      "Environmental NPOs",
+      "Community groups",
+      "Educational institutions"
+    ],
+    "kpis": [
+      "Waste reduced",
+      "Carbon footprint reduction",
+      "Community engagement"
+    ],
+    "scrapedAt": "2026-01-13T11:26:22.798720"
+  },
+  {
+    "title": "Youth Development and Empowerment",
+    "agency": "National Youth Council",
+    "amount": "$20,000 - $80,000",
+    "amountMin": 20000,
+    "amountMax": 80000,
+    "deadline": "2026-03-20T00:00:00",
+    "description": "Empowering youth through leadership development, skills training, and community service opportunities.",
+    "url": "https://www.nyc.gov.sg/grants",
+    "tags": [
+      "youth",
+      "education",
+      "community"
+    ],
+    "eligibility": [
+      "Youth organizations",
+      "Educational institutions",
+      "NPOs serving youth"
+    ],
+    "kpis": [
+      "Youth reached",
+      "Skills developed",
+      "Community impact"
+    ],
+    "scrapedAt": "2026-01-13T11:26:22.798721"
+  }
+]

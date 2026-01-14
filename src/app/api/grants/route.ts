@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Ensure Node.js runtime for Prisma database access
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     const grants = await prisma.grant.findMany({

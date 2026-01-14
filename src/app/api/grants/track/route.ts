@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 
+// Ensure Node.js runtime for Prisma database access
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({

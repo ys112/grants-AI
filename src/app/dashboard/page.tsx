@@ -177,7 +177,7 @@ export default function DashboardPage() {
       {loading ? (
         <Grid container spacing={3}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Grid item xs={12} sm={6} lg={4} key={i}>
+            <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={i}>
               <Skeleton
                 variant="rounded"
                 height={320}
@@ -193,7 +193,7 @@ export default function DashboardPage() {
       ) : (
         <Grid container spacing={3}>
           {filteredGrants.map((grant) => (
-            <Grid item xs={12} sm={6} lg={4} key={grant.id}>
+            <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={grant.id}>
               <GrantCard
                 grant={{ ...grant, isTracked: trackedIds.has(grant.id) }}
                 onTrack={handleTrack}
