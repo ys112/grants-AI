@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -11,6 +11,7 @@ import {
   IconButton,
   Paper,
   Alert,
+  Skeleton,
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -18,39 +19,13 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 interface TrackedGrant {
   id: string;
+  grantId: string;
   title: string;
   agency: string;
   amount: string;
   deadline: string;
   status: 'new' | 'reviewing' | 'applied' | 'rejected';
 }
-
-const sampleTrackedGrants: TrackedGrant[] = [
-  {
-    id: '1',
-    title: 'Community Arts Programme Grant',
-    agency: 'National Arts Council',
-    amount: '$50,000 - $100,000',
-    deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'new',
-  },
-  {
-    id: '2',
-    title: 'Healthcare Innovation Fund',
-    agency: 'Ministry of Health',
-    amount: '$100,000 - $250,000',
-    deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'reviewing',
-  },
-  {
-    id: '3',
-    title: 'Digital Inclusion Programme',
-    agency: 'IMDA',
-    amount: '$30,000 - $80,000',
-    deadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'applied',
-  },
-];
 
 const statusColumns = [
   { id: 'new', label: 'New', color: 'primary' },
@@ -62,24 +37,96 @@ const statusColumns = [
 type StatusType = (typeof statusColumns)[number]['id'];
 
 export default function TrackedGrantsPage() {
-  const [grants, setGrants] = useState<TrackedGrant[]>(sampleTrackedGrants);
+  const [grants, setGrants] = useState<TrackedGrant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const moveGrant = (grantId: string, direction: 'forward' | 'back') => {
+  // Fetch tracked grants from API
+  useEffect(() => {
+    async function fetchTrackedGrants() {
+      try {
+        const res = await fetch('/api/grants/tracked');
+        if (!res.ok) {
+          if (res.status === 401) {
+            setError('Please log in to view your tracked grants');
+            return;
+          }
+          throw new Error('Failed to fetch tracked grants');
+        }
+        const data = await res.json();
+        setGrants(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load tracked grants');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTrackedGrants();
+  }, []);
+
+  const moveGrant = async (grantId: string, direction: 'forward' | 'back') => {
+    const grant = grants.find((g) => g.grantId === grantId);
+    if (!grant) return;
+
+    const currentIndex = statusColumns.findIndex((s) => s.id === grant.status);
+    const newIndex =
+      direction === 'forward'
+        ? Math.min(currentIndex + 1, statusColumns.length - 1)
+        : Math.max(currentIndex - 1, 0);
+    const newStatus = statusColumns[newIndex].id as StatusType;
+
+    if (newStatus === grant.status) return;
+
+    // Optimistic update
     setGrants((prev) =>
-      prev.map((grant) => {
-        if (grant.id !== grantId) return grant;
-        const currentIndex = statusColumns.findIndex((s) => s.id === grant.status);
-        const newIndex =
-          direction === 'forward'
-            ? Math.min(currentIndex + 1, statusColumns.length - 1)
-            : Math.max(currentIndex - 1, 0);
-        return { ...grant, status: statusColumns[newIndex].id as StatusType };
-      })
+      prev.map((g) => (g.grantId === grantId ? { ...g, status: newStatus } : g))
     );
+
+    try {
+      const res = await fetch('/api/grants/track', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grantId, status: newStatus }),
+      });
+
+      if (!res.ok) {
+        // Revert on error
+        setGrants((prev) =>
+          prev.map((g) => (g.grantId === grantId ? { ...g, status: grant.status } : g))
+        );
+        console.error('Failed to update grant status');
+      }
+    } catch (err) {
+      // Revert on error
+      setGrants((prev) =>
+        prev.map((g) => (g.grantId === grantId ? { ...g, status: grant.status } : g))
+      );
+      console.error('Error updating status:', err);
+    }
   };
 
-  const removeGrant = (grantId: string) => {
-    setGrants((prev) => prev.filter((g) => g.id !== grantId));
+  const removeGrant = async (grantId: string) => {
+    const grantToRemove = grants.find((g) => g.grantId === grantId);
+    if (!grantToRemove) return;
+
+    // Optimistic update
+    setGrants((prev) => prev.filter((g) => g.grantId !== grantId));
+
+    try {
+      const res = await fetch(`/api/grants/track?grantId=${grantId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        // Revert on error
+        setGrants((prev) => [...prev, grantToRemove]);
+        console.error('Failed to remove grant');
+      }
+    } catch (err) {
+      // Revert on error
+      setGrants((prev) => [...prev, grantToRemove]);
+      console.error('Error removing grant:', err);
+    }
   };
 
   const getGrantsByStatus = (status: string) =>
@@ -91,6 +138,50 @@ export default function TrackedGrantsPage() {
     );
     return days > 0 ? `${days} days left` : 'Expired';
   };
+
+  if (loading) {
+    return (
+      <Box>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            Tracked Grants
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Manage your grant applications with our Kanban board
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' },
+            gap: 2,
+          }}
+        >
+          {statusColumns.map((column) => (
+            <Skeleton
+              key={column.id}
+              variant="rounded"
+              height={300}
+              sx={{ borderRadius: 3 }}
+            />
+          ))}
+        </Box>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            Tracked Grants
+          </Typography>
+        </Box>
+        <Alert severity="warning">{error}</Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -209,7 +300,7 @@ export default function TrackedGrantsPage() {
                           {column.id !== 'new' && (
                             <IconButton
                               size="small"
-                              onClick={() => moveGrant(grant.id, 'back')}
+                              onClick={() => moveGrant(grant.grantId, 'back')}
                               sx={{ color: 'text.secondary' }}
                             >
                               <ArrowBackIcon fontSize="small" />
@@ -218,7 +309,7 @@ export default function TrackedGrantsPage() {
                           {column.id !== 'rejected' && (
                             <IconButton
                               size="small"
-                              onClick={() => moveGrant(grant.id, 'forward')}
+                              onClick={() => moveGrant(grant.grantId, 'forward')}
                               sx={{ color: 'text.secondary' }}
                             >
                               <ArrowForwardIcon fontSize="small" />
@@ -226,7 +317,7 @@ export default function TrackedGrantsPage() {
                           )}
                           <IconButton
                             size="small"
-                            onClick={() => removeGrant(grant.id)}
+                            onClick={() => removeGrant(grant.grantId)}
                             sx={{ color: 'error.main' }}
                           >
                             <DeleteOutlineIcon fontSize="small" />

@@ -107,3 +107,59 @@ export async function DELETE(request: Request) {
     );
   }
 }
+
+const VALID_STATUSES = ['new', 'reviewing', 'applied', 'rejected'];
+
+export async function PATCH(request: Request) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { grantId, status } = await request.json();
+
+    if (!grantId) {
+      return NextResponse.json(
+        { error: 'Grant ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!status || !VALID_STATUSES.includes(status)) {
+      return NextResponse.json(
+        { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    const trackedGrant = await prisma.trackedGrant.update({
+      where: {
+        userId_grantId: {
+          userId: session.user.id,
+          grantId,
+        },
+      },
+      data: {
+        status,
+      },
+      include: {
+        grant: true,
+      },
+    });
+
+    return NextResponse.json(trackedGrant);
+  } catch (error) {
+    console.error('Error updating tracked grant status:', error);
+    return NextResponse.json(
+      { error: 'Failed to update tracked grant' },
+      { status: 500 }
+    );
+  }
+}

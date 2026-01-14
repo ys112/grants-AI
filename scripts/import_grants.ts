@@ -8,13 +8,13 @@
  */
 
 import 'dotenv/config';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../src/generated/prisma';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Initialize Prisma with better-sqlite3 adapter
-const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL || 'file:./dev.db' });
+// Initialize Prisma with PostgreSQL adapter
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'grants.json');
