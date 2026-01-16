@@ -39,3 +39,5 @@ next-env.d.ts
 .vercel
 
 dev.db
+*.docx
+scripts/read_docx.py
