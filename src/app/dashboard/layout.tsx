@@ -27,6 +27,7 @@ import BookmarkIcon from '@mui/icons-material/Bookmark';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
+import BusinessIcon from '@mui/icons-material/Business';
 import { signOut, useSession } from '@/lib/auth-client';
 
 const drawerWidth = 260;
@@ -34,6 +35,7 @@ const drawerWidth = 260;
 const navItems = [
   { label: 'Grant Feed', icon: <DashboardIcon />, path: '/dashboard' },
   { label: 'Tracked Grants', icon: <BookmarkIcon />, path: '/dashboard/tracked' },
+  { label: 'Projects', icon: <BusinessIcon />, path: '/dashboard/projects' },
   { label: 'Settings', icon: <SettingsIcon />, path: '/dashboard/settings' },
 ];
 
