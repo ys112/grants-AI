@@ -12,6 +12,12 @@ import {
   Paper,
   Alert,
   Skeleton,
+  Autocomplete,
+  TextField,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -40,6 +46,9 @@ export default function TrackedGrantsPage() {
   const [grants, setGrants] = useState<TrackedGrant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAgency, setSelectedAgency] = useState('All');
+  const agencies = ['All', ...Array.from(new Set(grants.map((g) => g.agency)))];
 
   // Fetch tracked grants from API
   useEffect(() => {
@@ -129,8 +138,15 @@ export default function TrackedGrantsPage() {
     }
   };
 
+  const filteredGrants = grants.filter((grant) => {
+    const matchesSearch = grant.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesAgency = selectedAgency === 'All' || grant.agency === selectedAgency;
+
+    return matchesSearch && matchesAgency;
+  });
+
   const getGrantsByStatus = (status: string) =>
-    grants.filter((g) => g.status === status);
+    filteredGrants.filter((g) => g.status === status);
 
   const formatDeadline = (deadline: string) => {
     const days = Math.ceil(
@@ -194,7 +210,44 @@ export default function TrackedGrantsPage() {
           Manage your grant applications with our Kanban board
         </Typography>
       </Box>
-
+      <Box sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: 2,
+        width: '100%'
+      }}>
+        <Autocomplete
+          freeSolo // Allows the user to type custom text without selecting an option
+          sx={{ width: '100%' }}
+          options={grants.map((option) => option.title)}
+          onInputChange={(event, newInputValue) => {
+            setSearchQuery(newInputValue);
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Search Grant Titles"
+              sx={{ mb: 4, backgroundColor: 'rgba(19, 47, 76, 0.3)' }}
+            />
+          )}
+        />
+        <FormControl sx={{ flex: 1, minWidth: 200 }}>
+          <InputLabel id="agency-filter-label">Agency</InputLabel>
+          <Select
+            labelId="agency-filter-label"
+            value={selectedAgency}
+            label="Agency"
+            onChange={(e) => setSelectedAgency(e.target.value)}
+            sx={{ backgroundColor: 'rgba(19, 47, 76, 0.3)' }}
+          >
+            {agencies.map((agency) => (
+              <MenuItem key={agency} value={agency}>
+                {agency}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
       {grants.length === 0 ? (
         <Alert severity="info">
           No tracked grants yet. Go to the Grant Feed to start tracking grants!
@@ -289,7 +342,7 @@ export default function TrackedGrantsPage() {
                           color={
                             Math.ceil(
                               (new Date(grant.deadline).getTime() - Date.now()) /
-                                (1000 * 60 * 60 * 24)
+                              (1000 * 60 * 60 * 24)
                             ) <= 7
                               ? 'error'
                               : 'default'
