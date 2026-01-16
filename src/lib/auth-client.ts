@@ -1,3 +1,4 @@
+import { inferAdditionalFields } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
 // For client-side, we need to provide a proper URL
@@ -6,10 +7,19 @@ import { createAuthClient } from "better-auth/react";
 export const authClient = createAuthClient({
   // Use localhost as default - the actual fetch will use relative URLs
   // which automatically go to the current origin
-  baseURL: 
-    typeof window !== "undefined" 
-      ? window.location.origin 
+  baseURL:
+    typeof window !== "undefined"
+      ? window.location.origin
       : (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  plugins: [inferAdditionalFields({
+    user: {
+      interests: { type: "string" },
+      targetPopulation: { type: "string" },
+      minFunding: { type: "number" },
+      role: { type: "string" },
+      organizationId: { type: "string" }
+    }
+  })]
 });
 
 export const {

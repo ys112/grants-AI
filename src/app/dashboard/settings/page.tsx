@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -46,11 +46,29 @@ const populationOptions = [
 ];
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
-  const [interests, setInterests] = useState<string[]>(['Seniors', 'Healthcare']);
-  const [targetPopulation, setTargetPopulation] = useState('Seniors (60+)');
-  const [minFunding, setMinFunding] = useState('25000');
+  const { data: session, refetch } = useSession();
+  const [interests, setInterests] = useState<string[]>([]);
+  const [targetPopulation, setTargetPopulation] = useState<string>('');
+  const [minFunding, setMinFunding] = useState<string>('');
   const [savedMessage, setSavedMessage] = useState(false);
+
+  // Sync form state when session data is loaded
+  useEffect(() => {
+    if (session?.user) {
+      // TypeScript now knows 'interests' exists!
+      const dbInterests = session.user.interests;
+
+      try {
+        const parsed = dbInterests ? JSON.parse(dbInterests) : [];
+        setInterests(parsed);
+      } catch (e) {
+        setInterests([]);
+      }
+
+      setTargetPopulation(session.user.targetPopulation || '');
+      setMinFunding(session.user.minFunding?.toString() || '');
+    }
+  }, [session]);
 
   const handleSave = async () => {
     try {
@@ -67,7 +85,7 @@ export default function SettingsPage() {
       });
 
       if (!response.ok) throw new Error('Failed to update settings');
-
+      await refetch();
       setSavedMessage(true);
     } catch (error) {
       console.error('Update error:', error);
