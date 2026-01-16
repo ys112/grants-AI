@@ -3,8 +3,12 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 
 // Server-side base URL for Better Auth
-// Priority: BETTER_AUTH_URL > VERCEL_URL > localhost
 const getBaseURL = () => {
+  // Explicit URL from env (recommended for production)
+  if (process.env.BETTER_AUTH_URL) {
+    return process.env.BETTER_AUTH_URL;
+  }
+  
   // Vercel auto-sets VERCEL_URL for all deployments (server-side only)
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
@@ -14,8 +18,33 @@ const getBaseURL = () => {
   return "http://localhost:3000";
 };
 
+// Get trusted origins for CORS
+const getTrustedOrigins = () => {
+  const origins: string[] = [
+    "http://localhost:3000",
+  ];
+  
+  // Add Vercel URL if available
+  if (process.env.VERCEL_URL) {
+    origins.push(`https://${process.env.VERCEL_URL}`);
+  }
+  
+  // Add explicit app URL if set
+  if (process.env.BETTER_AUTH_URL) {
+    origins.push(process.env.BETTER_AUTH_URL);
+  }
+  
+  // Add production domain if different
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    origins.push(process.env.NEXT_PUBLIC_APP_URL);
+  }
+  
+  return origins;
+};
+
 export const auth = betterAuth({
   baseURL: getBaseURL(),
+  trustedOrigins: getTrustedOrigins(),
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),

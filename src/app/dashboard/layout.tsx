@@ -70,8 +70,23 @@ export default function DashboardLayout({
   };
 
   const handleLogout = async () => {
-    await signOut();
-    router.push('/');
+    try {
+      await signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            router.push('/');
+          },
+          onError: (error) => {
+            console.error('Sign out error:', error);
+            // Force redirect even on error
+            router.push('/');
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      router.push('/');
+    }
   };
 
   const drawer = (
