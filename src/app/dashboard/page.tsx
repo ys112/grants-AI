@@ -14,10 +14,12 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import GrantCard, { Grant } from '@/components/GrantCard';
+import { useSession } from '@/lib/auth-client';
 
 const filterTags = ['All', 'Seniors', 'Healthcare', 'Arts', 'Technology', 'Community'];
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,16 +35,16 @@ export default function DashboardPage() {
         const res = await fetch('/api/grants');
         if (!res.ok) throw new Error('Failed to fetch grants');
         const data = await res.json();
-        
+
         const endTime = performance.now();
         console.log(`[Performance] Grants API loaded in ${(endTime - startTime).toFixed(2)}ms`);
-        
+
         // Add matchScore based on tag relevance (simplified scoring for demo)
         const grantsWithScores = data.map((grant: Grant) => ({
           ...grant,
           matchScore: Math.floor(60 + Math.random() * 35), // 60-95 range for demo
         }));
-        
+
         setGrants(grantsWithScores);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load grants');
@@ -78,12 +80,12 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ grantId }),
       });
-      
+
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to track grant');
       }
-      
+
       setTrackedIds((prev) => new Set([...prev, grantId]));
     } catch (err) {
       console.error('Track error:', err);
@@ -96,9 +98,9 @@ export default function DashboardPage() {
       const res = await fetch(`/api/grants/track?grantId=${grantId}`, {
         method: 'DELETE',
       });
-      
+
       if (!res.ok) throw new Error('Failed to untrack grant');
-      
+
       setTrackedIds((prev) => {
         const next = new Set(prev);
         next.delete(grantId);
@@ -111,15 +113,46 @@ export default function DashboardPage() {
 
   const filteredGrants = grants
     .filter((grant) => {
+      // 1. Basic Search and Tag Filtering
       const matchesSearch =
         grant.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         grant.agency.toLowerCase().includes(searchQuery.toLowerCase()) ||
         grant.description.toLowerCase().includes(searchQuery.toLowerCase());
+
       const matchesTag =
         selectedTag === 'All' || grant.tags.includes(selectedTag);
-      return matchesSearch && matchesTag;
+
+      // 2. Session-based filtering (Personalization)
+      // Only apply if the user is logged in and no specific tag/search is active
+      // or use it to further narrow down the "All" view
+      let matchesUserInterests = true;
+      if (session?.user && selectedTag === 'All' && !searchQuery) {
+        const userInterests = session.user.interests?.toLowerCase() || '';
+        const userTarget = session.user.targetPopulation?.toLowerCase() || '';
+
+        // Example logic: Does the grant have a tag that matches user interests?
+        matchesUserInterests = grant.tags.some(tag =>
+          userInterests.includes(tag.toLowerCase()) ||
+          userTarget.includes(tag.toLowerCase())
+        );
+      }
+
+      return matchesSearch && matchesTag && matchesUserInterests;
     })
-    .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+    .sort((a, b) => {
+      // 3. Dynamic Sorting based on Session (Match Score)
+      // You can boost the score if the grant matches the user's minFunding
+      let scoreA = a.matchScore || 0;
+      let scoreB = b.matchScore || 0;
+
+      if (session?.user?.minFunding) {
+        // Boost grants that meet the user's minimum funding requirement
+        if (a.amount && parseInt(a.amount.replace(/\D/g, '')) >= session.user.minFunding) scoreA += 20;
+        if (b.amount && parseInt(b.amount.replace(/\D/g, '')) >= session.user.minFunding) scoreB += 20;
+      }
+
+      return scoreB - scoreA;
+    });
 
   return (
     <Box>
