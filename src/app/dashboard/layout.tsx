@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Drawer,
@@ -19,6 +19,7 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
+  CircularProgress,
 } from '@mui/material';
 import { useRouter, usePathname } from 'next/navigation';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -47,7 +48,14 @@ export default function DashboardLayout({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
+
+  // Redirect to sign-in if not authenticated (client-side fallback)
+  useEffect(() => {
+    if (!isPending && !session?.user) {
+      router.push('/auth/sign-in');
+    }
+  }, [isPending, session, router]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -161,6 +169,23 @@ export default function DashboardLayout({
       </Box>
     </Box>
   );
+
+  // Show loading state while checking authentication
+  if (isPending || !session?.user) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+          backgroundColor: 'background.default',
+        }}
+      >
+        <CircularProgress color="primary" />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
