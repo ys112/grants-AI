@@ -53,10 +53,27 @@ export default function SettingsPage() {
   const [savedMessage, setSavedMessage] = useState(false);
 
   const handleSave = async () => {
-    // In production, this would call the API to save settings
-    console.log('Saving settings:', { interests, targetPopulation, minFunding });
-    setSavedMessage(true);
-  };
+    try {
+      const response = await fetch('/api/user/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          interests: JSON.stringify(interests),
+          targetPopulation,
+          minFunding: parseInt(minFunding, 10),
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update settings');
+
+      setSavedMessage(true);
+    } catch (error) {
+      console.error('Update error:', error);
+      alert("Failed to save settings. Please try again.");
+    }
+  }
 
   return (
     <Box>
@@ -77,7 +94,7 @@ export default function SettingsPage() {
             Profile Information
           </Typography>
           <Divider sx={{ my: 2, borderColor: 'rgba(78, 205, 196, 0.1)' }} />
-          
+
           <Stack spacing={3}>
             <TextField
               label="Name"
