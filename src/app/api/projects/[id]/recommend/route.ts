@@ -68,21 +68,14 @@ export async function POST(
         // Also check if project was updated after cache
         const projectUpdatedAfterCache = project.updatedAt > cacheDate;
 
-        // Return cached if no new grants and project not updated
-        // But we still need to calculate semantic scores on-the-fly
+        // Return cached with stored LLM scores
         if (newGrantsCount === 0 && !projectUpdatedAfterCache) {
-          // Import semantic calculation
-          const { calculateBatchSemanticSimilarity } = await import("@/lib/semantic-comparison");
-          const grantIds = existingRecommendations.map(r => r.grantId);
-          const semanticScoresMap = await calculateBatchSemanticSimilarity(project.id, grantIds);
-
           return NextResponse.json({
             project: { id: project.id, name: project.name },
             recommendations: existingRecommendations.map((rec) => {
-              const semanticData = semanticScoresMap.get(rec.grantId);
               const deadline = rec.grant.deadline;
               const daysUntil = Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-              const deadlineScore = daysUntil <= 7 ? 100 : daysUntil <= 14 ? 80 : daysUntil <= 30 ? 60 : daysUntil <= 60 ? 40 : daysUntil <= 90 ? 30 : 20;
+              const deadlineScore = rec.deadlineScore ?? (daysUntil <= 7 ? 100 : daysUntil <= 14 ? 80 : daysUntil <= 30 ? 60 : daysUntil <= 60 ? 40 : daysUntil <= 90 ? 30 : 20);
 
               return {
                 grant: {
@@ -99,9 +92,14 @@ export async function POST(
                   category: rec.categoryScore,
                   funding: rec.fundingScore,
                   deadline: deadlineScore,
-                  semantic: semanticData?.overall ?? null,
+                  semantic: rec.semanticScore ?? null,
                 },
-                semanticScores: semanticData || null,
+                llmScores: rec.llmPurpose != null ? {
+                  purposeAlignment: rec.llmPurpose,
+                  eligibilityFit: rec.llmEligibility,
+                  impactRelevance: rec.llmImpact,
+                  overall: rec.llmOverall,
+                } : null,
                 matchReason: rec.matchReason,
               };
             }),
@@ -221,7 +219,15 @@ export async function GET(
           overall: rec.overallScore,
           category: rec.categoryScore,
           funding: rec.fundingScore,
+          deadline: rec.deadlineScore,
+          semantic: rec.semanticScore,
         },
+        llmScores: rec.llmPurpose != null ? {
+          purposeAlignment: rec.llmPurpose,
+          eligibilityFit: rec.llmEligibility,
+          impactRelevance: rec.llmImpact,
+          overall: rec.llmOverall,
+        } : null,
         matchReason: rec.matchReason,
         createdAt: rec.createdAt,
       })),

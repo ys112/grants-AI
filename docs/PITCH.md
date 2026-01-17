@@ -116,12 +116,6 @@ GrantSync is an intelligent platform that:
 
 ---
 
-## 👥 Team
-
-- **Yu Siang** - Full-stack Developer
-
----
-
 ## 🔮 Roadmap
 
 ### Phase 1 (Current)

@@ -7,6 +7,7 @@ import {
   IconButton,
   Skeleton,
   Alert,
+  Paper,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useRouter } from 'next/navigation';
@@ -89,11 +90,19 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         </Box>
       </Box>
 
-      <ProjectForm 
-        initialData={projectData}
-        mode="edit"
-        projectId={id}
-      />
+      <Paper
+        sx={{
+          p: 4,
+          borderRadius: 3,
+          maxWidth: 800,
+        }}
+      >
+        <ProjectForm 
+          initialData={projectData}
+          mode="edit"
+          projectId={id}
+        />
+      </Paper>
     </Box>
   );
 }

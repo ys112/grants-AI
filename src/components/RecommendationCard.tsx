@@ -205,7 +205,7 @@ export default function RecommendationCard({
             </Typography>
             <Stack spacing={1}>
               {/* Overall Semantic Score */}
-              {scores.semantic != null && (
+              {/* {scores.semantic != null && (
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="caption">🤖 AI Semantic</Typography>
@@ -220,7 +220,7 @@ export default function RecommendationCard({
                     sx={{ height: 4, borderRadius: 2 }}
                   />
                 </Box>
-              )}
+              )} */}
               {/* Category Match */}
               {scores.category != null && (
                 <Box>
@@ -279,7 +279,7 @@ export default function RecommendationCard({
           {llmScores && (
             <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, bgcolor: 'rgba(78, 205, 196, 0.08)' }}>
               <Typography variant="caption" color="primary" fontWeight={600} sx={{ mb: 1, display: 'block' }}>
-                🤖 AI Analysis (60% weight)
+                🤖 AI Analysis
               </Typography>
               <Stack spacing={1}>
                 <Box>
@@ -353,7 +353,7 @@ export default function RecommendationCard({
             color="primary"
             sx={{ flexGrow: 1 }}
           >
-            AI Analysis
+            Generate Gap Report
           </Button>
           <Button
             variant="outlined"
@@ -395,7 +395,7 @@ export default function RecommendationCard({
           {analyzing && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <CircularProgress />
-              <Typography sx={{ mt: 2 }}>Analyzing with AI...</Typography>
+              <Typography sx={{ mt: 2 }}>Analyzing gaps with AI...</Typography>
             </Box>
           )}
 

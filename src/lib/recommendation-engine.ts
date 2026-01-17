@@ -418,7 +418,7 @@ export async function saveRecommendations(
     where: { projectId },
   });
 
-  // Insert new recommendations
+  // Insert new recommendations with all scores including LLM
   await prisma.projectRecommendation.createMany({
     data: recommendations.map((rec) => ({
       projectId,
@@ -426,6 +426,12 @@ export async function saveRecommendations(
       overallScore: rec.scores.overall,
       categoryScore: rec.scores.category,
       fundingScore: rec.scores.funding,
+      semanticScore: rec.scores.semantic,
+      deadlineScore: rec.scores.deadline,
+      llmPurpose: rec.llmScores?.purposeAlignment ?? null,
+      llmEligibility: rec.llmScores?.eligibilityFit ?? null,
+      llmImpact: rec.llmScores?.impactRelevance ?? null,
+      llmOverall: rec.llmScores?.overall ?? null,
       matchReason: rec.matchReason,
     })),
   });

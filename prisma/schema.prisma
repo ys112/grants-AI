@@ -206,6 +206,13 @@ model ProjectRecommendation {
   categoryScore Float?   // Focus areas match score
   fundingScore  Float?   // Funding range overlap score
   semanticScore Float?   // Description similarity score
+  deadlineScore Float?   // Deadline urgency score
+  
+  // LLM Scores (0-100 scale)
+  llmPurpose    Float?   // LLM purpose alignment score
+  llmEligibility Float?  // LLM eligibility fit score
+  llmImpact     Float?   // LLM impact relevance score
+  llmOverall    Float?   // LLM overall score
   
   // Status tracking
   status        String   @default("new") // new, reviewed, applied, dismissed

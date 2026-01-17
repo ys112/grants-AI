@@ -176,7 +176,7 @@ export default function ProjectForm({ initialData, mode = 'create', projectId }:
           fullWidth
           multiline
           minRows={3}
-          maxRows={10}
+          maxRows={20}
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Describe your project goals, activities, and expected outcomes..."
@@ -247,7 +247,7 @@ export default function ProjectForm({ initialData, mode = 'create', projectId }:
           fullWidth
           multiline
           minRows={2}
-          maxRows={8}
+          maxRows={20}
           value={formData.expectedOutcomes}
           onChange={(e) => setFormData({ ...formData, expectedOutcomes: e.target.value })}
           placeholder="e.g., Serve 50 additional seniors, improve mental wellness scores by 20%, train 10 caregivers..."
