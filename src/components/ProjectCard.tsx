@@ -127,7 +127,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             <Chip key={area} label={area} size="small" variant="outlined" />
           ))}
           {focusAreas.length > 3 && (
-            <Chip label={`+${focusAreas.length - 3}`} size="small" />
+            <Chip label={`+${focusAreas.length - 3}`} size="small" variant="outlined" />
           )}
         </Stack>
 

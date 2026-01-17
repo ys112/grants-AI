@@ -74,19 +74,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           deliverables: typeof proj.deliverables === 'string' ? JSON.parse(proj.deliverables || '[]') : proj.deliverables || [],
         });
 
-        // Auto-fetch fresh recommendations with all score fields
+        // Load cached recommendations (GET) - only regenerate on explicit Refresh
         setRecommendLoading(true);
         try {
-          const recRes = await fetch(`/api/projects/${id}/recommend`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ forceRefresh: false }),
-          });
+          const recRes = await fetch(`/api/projects/${id}/recommend`);
           if (recRes.ok) {
             const recData = await recRes.json();
-            console.log('[DEBUG] Recommendation data:', recData.recommendations?.[0]);
-            setRecommendations(recData.recommendations);
-            setCached(recData.meta?.cached === true);
+            if (recData.recommendations && recData.recommendations.length > 0) {
+              setRecommendations(recData.recommendations);
+              setCached(true);
+            }
+            // If no cached recommendations, user can click Refresh to generate
           }
         } finally {
           setRecommendLoading(false);
@@ -217,10 +215,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
             Edit
           </MenuItem>
-          <MenuItem onClick={() => { router.push(`/dashboard/projects/${id}/analysis`); setAnchorEl(null); }}>
-            <ListItemIcon><AutoAwesomeIcon fontSize="small" color="primary" /></ListItemIcon>
-            AI Analysis
-          </MenuItem>
           <MenuItem onClick={() => { setDeleteDialogOpen(true); setAnchorEl(null); }}>
             <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
             Delete
@@ -237,7 +231,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </Typography>
         <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5} sx={{ mb: 2 }}>
           {project.focusAreas.map((area) => (
-            <Chip key={area} label={area} size="small" color="primary" />
+            <Chip key={area} label={area} size="small" color='primary' sx={{ color: 'white' }} variant="outlined" />
           ))}
         </Stack>
         {(project.fundingMin || project.fundingMax) && (
