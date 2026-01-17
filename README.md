@@ -1,14 +1,34 @@
 # GrantSync 🎯
 
-**Orchestrate Your Funding Sustainability**
+**AI-Powered Grant Discovery for Non-Profits**
 
-GrantSync is a grant discovery and tracking platform for the Tsao Foundation ecosystem. It enables nonprofit partners to discover, evaluate, and manage funding opportunities.
+GrantSync is an intelligent grant discovery and tracking platform that helps non-profit organizations find, evaluate, and manage funding opportunities using AI-powered recommendations.
 
-## 🚀 Features
+---
 
-- **Smart Discovery** - AI-powered relevance scoring based on organization profile
-- **Grant Filtering** - Filter by category, funding range, deadline
-- **Kanban Tracking** - Visual workflow from discovery to application
+## ✨ Key Features
+
+### 🤖 AI-Powered Recommendations
+- **2-Stage Hybrid Pipeline**: Embedding pre-filter + LLM-based relevance scoring
+- **Smart Matching**: Analyzes purpose alignment, eligibility fit, and impact relevance
+- **Reasoning**: Each recommendation includes AI-generated explanations
+
+### 📊 Project Management
+- Create and manage multiple funding projects
+- Define focus areas, target population, deliverables, and funding needs
+- Track project status: Planning → Active → Funded → Completed
+
+### 🔍 Grant Discovery
+- Auto-import grants from OurSG Grants Portal
+- Filter by category, funding range, deadline
+- Real-time grant status tracking
+
+### 📋 Application Tracking
+- Kanban-style workflow: Discovered → Applying → Submitted → Approved/Rejected
+- AI gap analysis for each grant application
+- Track deadlines and progress
+
+---
 
 ## 🛠️ Tech Stack
 
@@ -17,17 +37,21 @@ GrantSync is a grant discovery and tracking platform for the Tsao Foundation eco
 | Frontend | Next.js 16, React 19 |
 | UI | MUI (Material-UI) v7 |
 | Authentication | Better Auth |
-| Database | PostgreSQL + Prisma 7 |
+| Database | PostgreSQL + Prisma 7 + pgvector |
+| AI | Google Gemini 3.0 (LLM + Embeddings) |
 | Scraper | Python + psycopg2 |
 
-## 📦 Quick Start
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+
 - Python 3.10+
-- PostgreSQL database (local or cloud)
+- PostgreSQL with pgvector extension (Neon recommended)
+- Google AI API key
 
-### Local Development
+### Installation
 
 ```bash
 # Clone and install
@@ -38,91 +62,120 @@ npm install
 # Setup Python scraper
 pip install -r scripts/requirements.txt
 
-# Configure database
+# Configure environment
 cp .env.example .env
-# Edit .env with your PostgreSQL connection string
+# Edit .env with your credentials
+```
 
+### Database Setup
+
+```bash
 # Push schema to database
 npx prisma db push
 
-# Seed organizations
+# Enable pgvector (run in Neon console)
+CREATE EXTENSION IF NOT EXISTS vector;
+
+# Seed demo user
 npm run db:seed
 
-# Scrape and populate grants
-npm run scrape
+# Import grants from OurSG
+npm run grants:import
 
-# Start dev server
+# Generate embeddings
+npm run grants:embed
+```
+
+### Start Development
+
+```bash
 npm run dev
+# Open http://localhost:3000
 ```
 
-## 🌐 Cloud Deployment (Vercel + Neon)
-
-### 1. Create Neon Database
-1. Sign up at [neon.tech](https://neon.tech)
-2. Create a new project
-3. Copy the connection string
-
-### 2. Deploy to Vercel
-1. Push code to GitHub
-2. Import project in Vercel
-3. Add environment variables:
-   ```
-   DATABASE_URL=postgresql://USER:PASSWORD@ep-xxx.us-east-2.aws.neon.tech/grantsync?sslmode=require
-   BETTER_AUTH_SECRET=your-production-secret
-   BETTER_AUTH_URL=https://your-app.vercel.app
-   NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
-   ```
-4. Deploy!
-
-### 3. Run Migrations
-```bash
-npx prisma migrate deploy
-```
-
-### 4. Populate Grants
-Run the scraper locally or set up a cron job:
-```bash
-npm run scrape
-```
+---
 
 ## 🔧 Environment Variables
 
 ```env
-# PostgreSQL Database (required)
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
+# Database (required)
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 
 # Authentication (required)
 BETTER_AUTH_SECRET="your-secret-key"
 BETTER_AUTH_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# AI Features (required for recommendations)
+GEMINI_API_KEY="your-google-ai-api-key"
 ```
+
+---
 
 ## 📁 Project Structure
 
 ```
 grantsync/
+├── docs/                     # Documentation
+│   ├── recommendation-engine.md  # AI pipeline docs
+│   ├── embeddings.md         # Embedding system
+│   └── setup.md              # Setup guide
 ├── prisma/
-│   ├── schema.prisma     # PostgreSQL schema
-│   └── seed.ts           # Organization seeder
+│   ├── schema.prisma         # Database schema
+│   └── seed.ts               # Demo user seeder
 ├── scripts/
-│   ├── scraper.py        # Grant scraper (Python)
-│   └── requirements.txt  # Python dependencies
+│   ├── scraper.py            # OurSG grant scraper
+│   ├── import-grants.ts      # Grant importer
+│   └── generate-embeddings.ts # Embedding generator
 ├── src/
-│   ├── app/              # Next.js pages
-│   ├── components/       # React components
-│   └── lib/              # Utilities
+│   ├── app/                  # Next.js app router
+│   ├── components/           # React components
+│   └── lib/                  # Core services
+│       ├── recommendation-engine.ts  # AI recommendation
+│       ├── llm-relevance.ts  # LLM scoring
+│       └── embedding-service.ts # Embeddings
 └── package.json
 ```
 
-## 🧪 Scripts
+---
+
+## 🧪 Available Scripts
 
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Start development server |
 | `npm run build` | Build for production |
-| `npm run scrape` | Scrape and store grants to PostgreSQL |
 | `npm run db:push` | Push schema to database |
-| `npm run db:seed` | Seed organizations |
+| `npm run db:seed` | Seed demo user |
+| `npm run grants:import` | Import grants from OurSG API |
+| `npm run grants:embed` | Generate grant embeddings |
+| `npm run scrape` | Run Python scraper |
+
+---
+
+## 🌐 Deployment
+
+### Vercel + Neon (Recommended)
+
+1. Create database at [neon.tech](https://neon.tech)
+2. Enable pgvector: `CREATE EXTENSION IF NOT EXISTS vector;`
+3. Deploy to Vercel with environment variables
+4. Run `npx prisma migrate deploy`
+5. Import grants: `npm run grants:import`
+
+See [docs/setup.md](docs/setup.md) for detailed deployment guide.
+
+---
+
+## 📚 Documentation
+
+- [Setup Guide](docs/setup.md) - Complete installation and configuration
+- [Recommendation Engine](docs/recommendation-engine.md) - AI pipeline details
+- [Embeddings](docs/embeddings.md) - Semantic search system
+- [Architecture](docs/architecture.md) - System architecture
+- [API Reference](docs/api.md) - API endpoints
+
+---
 
 ## 📄 License
 

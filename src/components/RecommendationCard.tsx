@@ -53,11 +53,12 @@ export interface Recommendation {
     deadline?: number | null;
     semantic?: number | null;
   };
-  semanticScores?: {
-    purpose: number;
-    eligibility: number;
-    deliverables: number;
+  llmScores?: {
+    purposeAlignment: number;
+    eligibilityFit: number;
+    impactRelevance: number;
     overall: number;
+    reasoning: string;
   } | null;
   matchReason?: string;
   status?: string;
@@ -92,7 +93,7 @@ export default function RecommendationCard({
   onTrack,
   onUntrack,
 }: RecommendationCardProps) {
-  const { grant, scores, semanticScores, matchReason } = recommendation;
+  const { grant, scores, llmScores, matchReason } = recommendation;
   const deadline = new Date(grant.deadline);
   const daysUntil = Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
@@ -232,6 +233,7 @@ export default function RecommendationCard({
                   <LinearProgress
                     variant="determinate"
                     value={scores.category}
+                    color="secondary"
                     sx={{ height: 4, borderRadius: 2 }}
                   />
                 </Box>
@@ -273,53 +275,53 @@ export default function RecommendationCard({
             </Stack>
           </Box>
 
-          {/* Semantic Details */}
-          {semanticScores && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                AI Analysis Details
+          {/* LLM AI Analysis - Primary Scores */}
+          {llmScores && (
+            <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, bgcolor: 'rgba(78, 205, 196, 0.08)' }}>
+              <Typography variant="caption" color="primary" fontWeight={600} sx={{ mb: 1, display: 'block' }}>
+                🤖 AI Analysis (60% weight)
               </Typography>
               <Stack spacing={1}>
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="caption">Purpose Alignment</Typography>
+                    <Typography variant="caption">🎯 Purpose Alignment</Typography>
                     <Typography variant="caption" fontWeight={600}>
-                      {semanticScores.purpose}%
+                      {llmScores.purposeAlignment}%
                     </Typography>
                   </Box>
                   <LinearProgress
                     variant="determinate"
-                    value={semanticScores.purpose}
-                    color="info"
-                    sx={{ height: 3, borderRadius: 2, opacity: 0.7 }}
+                    value={llmScores.purposeAlignment}
+                    color="primary"
+                    sx={{ height: 5, borderRadius: 2 }}
                   />
                 </Box>
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="caption">Eligibility Fit</Typography>
+                    <Typography variant="caption">✅ Eligibility Fit</Typography>
                     <Typography variant="caption" fontWeight={600}>
-                      {semanticScores.eligibility}%
+                      {llmScores.eligibilityFit}%
                     </Typography>
                   </Box>
                   <LinearProgress
                     variant="determinate"
-                    value={semanticScores.eligibility}
-                    color="info"
-                    sx={{ height: 3, borderRadius: 2, opacity: 0.7 }}
+                    value={llmScores.eligibilityFit}
+                    color="primary"
+                    sx={{ height: 5, borderRadius: 2 }}
                   />
                 </Box>
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="caption">Deliverables Match</Typography>
+                    <Typography variant="caption">📈 Impact Relevance</Typography>
                     <Typography variant="caption" fontWeight={600}>
-                      {semanticScores.deliverables}%
+                      {llmScores.impactRelevance}%
                     </Typography>
                   </Box>
                   <LinearProgress
                     variant="determinate"
-                    value={semanticScores.deliverables}
-                    color="info"
-                    sx={{ height: 3, borderRadius: 2, opacity: 0.7 }}
+                    value={llmScores.impactRelevance}
+                    color="primary"
+                    sx={{ height: 5, borderRadius: 2 }}
                   />
                 </Box>
               </Stack>

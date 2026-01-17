@@ -8,10 +8,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 const apiKey = process.env.GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 // POST /api/projects/[id]/analyze - AI gap analysis for a project-grant pair
 export async function POST(
@@ -36,7 +36,7 @@ export async function POST(
       return NextResponse.json({ error: "grantId is required" }, { status: 400 });
     }
 
-    if (!genAI) {
+    if (!ai) {
       return NextResponse.json(
         { error: "AI analysis unavailable - GEMINI_API_KEY not configured" },
         { status: 503 }
@@ -106,9 +106,11 @@ Provide a detailed analysis with the following sections:
 Format your response as JSON with keys: matchAssessment, strengths (array), gaps (array), recommendations (array), tips (array).`;
 
     // Call Gemini
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    const result = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
+    const responseText = result.text || "";
 
     // Parse JSON from response (handle markdown code blocks)
     let analysis;

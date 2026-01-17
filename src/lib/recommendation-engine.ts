@@ -23,7 +23,13 @@ export interface RecommendationResult {
     deadline: number;
     semantic?: number | null;
   };
-  semanticScores?: SectionSimilarityScores | null;
+  llmScores?: {
+    purposeAlignment: number;
+    eligibilityFit: number;
+    impactRelevance: number;
+    overall: number;
+    reasoning: string;
+  } | null;
   matchReason?: string;
 }
 
@@ -95,67 +101,116 @@ export async function getRecommendationsForProject(
     },
   });
 
-  // Stage: Calculate semantic similarity for all grants at once
+  // Stage 2: Calculate preliminary scores (embedding + category) for pre-filtering
   const grantIds = eligibleGrants.map(g => g.id);
   const semanticScoresMap = await calculateBatchSemanticSimilarity(project.id, grantIds);
 
-  // Stage 2-5: Score each grant
-  const scoredGrants: RecommendationResult[] = [];
+  // Score all grants with preliminary scoring
+  type PreliminaryResult = {
+    grant: PrismaGrant;
+    prelimScore: number;
+    categoryScore: number;
+    fundingScore: number;
+    deadlineScore: number;
+    embeddingScore: number | null;
+    grantTags: string[];
+  };
+
+  const preliminaryScores: PreliminaryResult[] = [];
 
   for (const grant of eligibleGrants) {
-    // Parse grant tags/categories
     const grantTags: string[] = JSON.parse(grant.tags || "[]");
-
-    // Stage 2: Category matching
     const categoryScore = calculateCategoryScore(projectFocusAreas, grantTags);
-
-    // Stage 3: Funding matching
     const fundingScore = calculateFundingScore(
       project.fundingMin,
       project.fundingMax,
       grant.amountMin,
       grant.amountMax
     );
-
-    // Stage 4: Deadline urgency score (grants closing soon get a boost)
     const deadlineScore = calculateDeadlineScore(grant.deadline);
+    const embeddingScore = semanticScoresMap.get(grant.id)?.overall ?? null;
 
-    // Stage 5: Get semantic score if available
-    const semanticData = semanticScoresMap.get(grant.id);
-    const semanticScore = semanticData?.overall ?? null;
+    // Preliminary score: category + embedding weighted (no LLM yet)
+    const prelimScore = embeddingScore !== null
+      ? (embeddingScore * 0.5) + (categoryScore * 0.3) + (fundingScore * 0.1) + (deadlineScore * 0.1)
+      : (categoryScore * 0.5) + (fundingScore * 0.3) + (deadlineScore * 0.2);
 
-    // Stage 6: Composite scoring
-    const overallScore = calculateOverallScore({
-      category: categoryScore,
-      funding: fundingScore,
-      deadline: deadlineScore,
-      semantic: semanticScore,
-    });
+    if (prelimScore >= minScore * 0.7) { // Lower threshold for pre-filter
+      preliminaryScores.push({
+        grant,
+        prelimScore,
+        categoryScore,
+        fundingScore,
+        deadlineScore,
+        embeddingScore,
+        grantTags,
+      });
+    }
+  }
 
-    // Only include if above threshold
+  // Sort by preliminary score and take top 15 for LLM scoring
+  preliminaryScores.sort((a, b) => b.prelimScore - a.prelimScore);
+  const topCandidates = preliminaryScores.slice(0, 15);
+
+  // Stage 3: LLM re-scoring for top candidates
+  const { calculateBatchLLMRelevance } = await import("@/lib/llm-relevance");
+  
+  const projectContext = {
+    name: project.name,
+    description: project.description,
+    targetPopulation: project.targetPopulation,
+    focusAreas: projectFocusAreas,
+    expectedOutcomes: project.expectedOutcomes,
+    deliverables: projectDeliverables,
+  };
+
+  const grantsForLLM = topCandidates.map(c => ({
+    id: c.grant.id,
+    title: c.grant.title,
+    agency: c.grant.agency,
+    description: c.grant.description,
+    objectives: c.grant.objectives,
+    whoCanApply: c.grant.whoCanApply,
+    fundingInfo: c.grant.fundingInfo,
+    tags: c.grantTags,
+  }));
+
+  const llmScoresMap = await calculateBatchLLMRelevance(projectContext, grantsForLLM);
+
+  // Stage 4: Final scoring with LLM results
+  const scoredGrants: RecommendationResult[] = [];
+
+  for (const candidate of topCandidates) {
+    const llmScore = llmScoresMap.get(candidate.grant.id);
+    
+    // Final overall score: 60% LLM + 40% rule-based (if LLM available)
+    const overallScore = llmScore 
+      ? (llmScore.overall * 0.6) + (candidate.prelimScore * 0.4)
+      : candidate.prelimScore;
+
     if (overallScore >= minScore) {
       scoredGrants.push({
-        grant,
+        grant: candidate.grant,
         scores: {
           overall: Math.round(overallScore * 10) / 10,
-          category: Math.round(categoryScore * 10) / 10,
-          funding: Math.round(fundingScore * 10) / 10,
-          deadline: Math.round(deadlineScore * 10) / 10,
-          semantic: semanticScore,
+          category: Math.round(candidate.categoryScore * 10) / 10,
+          funding: Math.round(candidate.fundingScore * 10) / 10,
+          deadline: Math.round(candidate.deadlineScore * 10) / 10,
+          semantic: candidate.embeddingScore,
         },
-        semanticScores: semanticData || null,
-        matchReason: generateMatchReason(
+        llmScores: llmScore || null,
+        matchReason: llmScore?.reasoning || generateMatchReason(
           project,
-          grant,
-          { category: categoryScore, funding: fundingScore, semantic: semanticScore },
+          candidate.grant,
+          { category: candidate.categoryScore, funding: candidate.fundingScore, semantic: candidate.embeddingScore },
           projectFocusAreas,
-          grantTags
+          candidate.grantTags
         ),
       });
     }
   }
 
-  // Sort by overall score and limit results
+  // Sort by overall score (now LLM-based) and limit results
   scoredGrants.sort((a, b) => b.scores.overall - a.scores.overall);
   return scoredGrants.slice(0, maxResults);
 }

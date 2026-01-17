@@ -2,15 +2,15 @@
 
 ## Overview
 
-The grant recommendation system uses **native pgvector** for storing and comparing embeddings, enabling semantic similarity search between projects and grants.
+The grant recommendation system uses **native pgvector** for storing and comparing embeddings, enabling semantic similarity search between projects and grants. Embeddings serve as a **pre-filtering stage** before LLM-based analysis.
 
 ---
 
 ## Embedding Model
 
-**Model:** `gemini-embedding-001` (stable, June 2025)
+**Model:** `gemini-embedding-001` (stable)
 - Input: Text (up to 2,048 tokens)
-- Output: 768-dimensional vectors
+- Output: 3072-dimensional vectors (default)
 - Supports: 128 - 3,072 dimensions
 
 ---
@@ -39,12 +39,61 @@ Generated automatically on create/update via API.
 
 ---
 
+## Data Model
+
+### Grant Embeddings (vector(3072))
+| Column | Source Field |
+|--------|--------------|
+| `objectivesEmbed` | `objectives` or `description` |
+| `eligibilityEmbed` | `whoCanApply` |
+| `fundingEmbed` | `fundingInfo` |
+| `deliverablesEmbed` | `deliverables` or `requiredDocs` |
+
+### Project Embeddings (vector(3072))
+| Column | Source Field |
+|--------|--------------|
+| `goalEmbed` | `description` |
+| `populationEmbed` | `targetPopulation` |
+| `outcomesEmbed` | `expectedOutcomes` |
+| `deliverablesEmbed` | `deliverables` |
+
+---
+
+## Similarity Calculation
+
+**File:** `src/lib/semantic-comparison.ts`
+
+Uses **cosine similarity** converted to percentage scores:
+```typescript
+score = ((similarity + 1) / 2) * 100  // Maps -1..1 to 0..100
+```
+
+### Section Weights (Pre-filter stage)
+When embeddings are available:
+- 50% Embedding Score
+- 30% Category Match
+- 10% Funding Fit
+- 10% Deadline Urgency
+
+---
+
+## Role in Recommendation Pipeline
+
+Embeddings serve as **Stage 2** of the pipeline:
+
+1. **Stage 1:** Pre-filter (deadline, status, org type)
+2. **Stage 2:** Embedding + rules → Top 15 candidates
+3. **Stage 3:** LLM scoring → Final top 10
+
+See `docs/recommendation-engine.md` for full pipeline details.
+
+---
+
 ## Updating Embeddings
 
 ### Regenerate All Grant Embeddings
-To regenerate embeddings (e.g., after model update):
 ```sql
--- Clear existing embeddings first
+-- Clear existing embeddings
 UPDATE "Grant" SET 
   "objectivesEmbed" = NULL,
   "eligibilityEmbed" = NULL,
@@ -61,44 +110,17 @@ Edit and save the project - embeddings regenerate automatically.
 
 ---
 
-## Data Model
+## API Usage
 
-### Grant Embeddings
-| Column | Source Field |
-|--------|--------------|
-| `objectivesEmbed` | `objectives` or `description` |
-| `eligibilityEmbed` | `whoCanApply` |
-| `fundingEmbed` | `fundingInfo` |
-| `deliverablesEmbed` | `deliverables` or `requiredDocs` |
-
-### Project Embeddings
-| Column | Source Field |
-|--------|--------------|
-| `goalEmbed` | `description` |
-| `populationEmbed` | `targetPopulation` |
-| `outcomesEmbed` | `expectedOutcomes` |
-| `deliverablesEmbed` | `deliverables` |
-
----
-
-## Semantic Scoring
-
-Weights: **Purpose 40% | Eligibility 40% | Deliverables 20%**
-
-| Score | Project Field | Grant Field |
-|-------|--------------|-------------|
-| Purpose | `description` | `objectives` |
-| Eligibility | `targetPopulation` | `whoCanApply` |
-| Deliverables | `deliverables` | `deliverablesEmbed` |
-
----
-
-## API Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `POST /api/projects/[id]/recommend` | Returns `semanticScores` with recommendations |
-| `POST /api/projects/[id]/analyze` | AI gap analysis using Gemini |
+Embedding scores are included in recommendation responses:
+```json
+{
+  "scores": {
+    "semantic": 80,  // Overall embedding similarity
+    ...
+  }
+}
+```
 
 ---
 
@@ -106,7 +128,7 @@ Weights: **Purpose 40% | Eligibility 40% | Deliverables 20%**
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GEMINI_API_KEY` | Yes | For embedding generation and AI analysis |
+| `GEMINI_API_KEY` | Yes | For embedding generation |
 | `DATABASE_URL` | Yes | PostgreSQL with pgvector |
 
 ---
@@ -115,6 +137,5 @@ Weights: **Purpose 40% | Eligibility 40% | Deliverables 20%**
 
 | Script | Description |
 |--------|-------------|
-| `grants:import` | Fetch grants from OurSG API |
-| `grants:embed` | Generate embeddings for grants without them |
-| `grants:reset` | Clear all grant data |
+| `grants:embed` | Generate embeddings for grants |
+| `db:vector` | Enable pgvector extension |

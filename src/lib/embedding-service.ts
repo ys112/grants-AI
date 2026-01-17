@@ -1,11 +1,11 @@
 /**
  * Gemini Embedding Service (pgvector version)
  * 
- * Generates text embeddings using Google's text-embedding-004 model
+ * Generates text embeddings using Google's gemini-embedding-001 model
  * and provides cosine similarity utilities for pgvector.
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 // Initialize Gemini client
 const apiKey = process.env.GEMINI_API_KEY;
@@ -13,22 +13,23 @@ if (!apiKey && typeof window === 'undefined') {
   console.warn('GEMINI_API_KEY not set - embeddings will be disabled');
 }
 
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
-// Using gemini-embedding-001 (stable, 768 dimensions recommended)
-const embeddingModel = genAI?.getGenerativeModel({ model: 'gemini-embedding-001' });
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 /**
- * Generate embedding vector for text (768 dimensions)
+ * Generate embedding vector for text (3072 dimensions)
  * Returns null if API key not configured or error occurs
  */
 export async function generateEmbedding(text: string): Promise<number[] | null> {
-  if (!embeddingModel || !text?.trim()) {
+  if (!ai || !text?.trim()) {
     return null;
   }
 
   try {
-    const result = await embeddingModel.embedContent(text);
-    return result.embedding.values;
+    const response = await ai.models.embedContent({
+      model: 'gemini-embedding-001',
+      contents: text,
+    });
+    return response.embeddings?.[0]?.values ?? null;
   } catch (error) {
     console.error('Embedding generation failed:', error);
     return null;

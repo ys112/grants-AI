@@ -146,7 +146,7 @@ export async function POST(
           url: rec.grant.url,
         },
         scores: rec.scores,
-        semanticScores: rec.semanticScores || null,
+        llmScores: rec.llmScores || null,
         matchReason: rec.matchReason,
       })),
       meta: {

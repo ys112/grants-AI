@@ -256,26 +256,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </Typography>
           {cached && <Chip label="Cached" size="small" variant="outlined" />}
         </Stack>
-        <Stack direction="row" spacing={1}>
-          {recommendations.length > 0 && (
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={() => handleGetRecommendations(true)}
-              disabled={recommendLoading}
-            >
-              Refresh
-            </Button>
-          )}
-          <Button
-            variant="contained"
-            startIcon={recommendLoading ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeIcon />}
-            onClick={() => handleGetRecommendations(false)}
-            disabled={recommendLoading}
-          >
-            {recommendations.length === 0 ? 'Get Recommendations' : 'Update'}
-          </Button>
-        </Stack>
+        <Button
+          variant="contained"
+          startIcon={recommendLoading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
+          onClick={() => handleGetRecommendations(true)}
+          disabled={recommendLoading}
+        >
+          {recommendations.length === 0 ? 'Get Recommendations' : 'Refresh'}
+        </Button>
       </Box>
 
       {recommendations.length === 0 ? (
