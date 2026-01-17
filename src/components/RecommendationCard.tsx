@@ -192,7 +192,7 @@ export default function RecommendationCard({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <AttachMoneyIcon fontSize="small" color="action" />
                 <Typography variant="body2" color="text.secondary">
-                  {grant.amount}
+                  {grant.amount == "Varies" ? grant.amount : "Up to $" + Number(grant.amount).toLocaleString()}
                 </Typography>
               </Box>
             )}

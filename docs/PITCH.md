@@ -25,6 +25,12 @@ GrantSync is an intelligent platform that:
 
 ---
 
+## 👥 Team
+- **Yong Yu Sian** 
+- **Nam Dohyun**
+- **Edward Rafael**
+- **Glenn Chew**
+
 ## 🤖 Technical Innovation
 
 ### 2-Stage AI Pipeline
@@ -33,11 +39,22 @@ GrantSync is an intelligent platform that:
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │   Stage 1       │     │   Stage 2       │     │   Output        │
 │   Embeddings    │ ──▶ │   LLM Analysis  │ ──▶ │   Ranked List   │
-│   (Pre-filter)  │     │   (Relevance)   │     │   + Reasoning   │
+│   (Pre-filter)  │     │   (60% weight)  │     │   + Reasoning   │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
      Fast                    Accurate               Actionable
    100→15 grants           15→10 grants          With explanations
 ```
+
+### Scoring Formula
+
+**Final Score = (LLM Score × 60%) + (Rule-Based Score × 40%)**
+
+| Pre-Filter Stage (40%) | Weight | LLM Analysis (60%) | Weight |
+|------------------------|--------|-------------------|--------|
+| Semantic Embeddings | 50% | Purpose Alignment | 50% |
+| Focus Area Match | 30% | Eligibility Fit | 25% |
+| Funding Range Fit | 10% | Impact Relevance | 25% |
+| Deadline Urgency | 10% | | |
 
 **What makes us different:**
 - **Not just keyword matching** - We use semantic embeddings (pgvector)
@@ -145,4 +162,3 @@ GitHub: [github.com/your-org/grantsync](https://github.com/your-org/grantsync)
 
 ---
 
-*Built with ❤️ for the Tsao Foundation ecosystem*

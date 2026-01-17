@@ -85,7 +85,7 @@ export async function getRecommendationsForProject(
   project: PrismaProject,
   options: RecommendationOptions = {}
 ): Promise<RecommendationResult[]> {
-  const { maxResults = 10, minScore = 30 } = options;
+  const { maxResults = 20, minScore = 30 } = options;
 
   // Parse project focus areas
   const projectFocusAreas: string[] = JSON.parse(project.focusAreas || "[]");
@@ -253,46 +253,38 @@ function calculateFundingScore(
   grantMin: number | null,
   grantMax: number | null
 ): number {
+  // "Up to max" logic: Project needs UP TO projectMax funding
+  // A grant is a good fit if it can provide at least what the project needs
+  
   // If project has no funding requirements, all grants match
   if (projectMin === null && projectMax === null) {
     return 50; // Neutral score
   }
 
-  // If grant has no amount info, give partial credit
+  // If grant has no amount info ("Varies"), give partial credit
   if (grantMin === null && grantMax === null) {
     return 30; // Unknown, but might work
   }
 
-  const pMin = projectMin || 0;
-  const pMax = projectMax || Infinity;
-  const gMin = grantMin || 0;
-  const gMax = grantMax || Infinity;
-
-  // Check for overlap
-  const overlapStart = Math.max(pMin, gMin);
-  const overlapEnd = Math.min(pMax, gMax);
-
-  if (overlapStart > overlapEnd) {
-    // No overlap
-    return 0;
+  // Project needs up to projectMax (or projectMin if max not set)
+  const projectNeeds = projectMax || projectMin || 0;
+  
+  // Grant can provide up to grantMax (or grantMin if max not set)
+  const grantProvides = grantMax || grantMin || 0;
+  
+  // Perfect fit: Grant can fully cover project needs
+  if (grantProvides >= projectNeeds) {
+    return 100;
   }
-
-  // Calculate percentage of project range that overlaps with grant
-  const projectRange = pMax === Infinity ? pMin * 2 : pMax - pMin;
-  const overlapRange = overlapEnd - overlapStart;
-
-  if (projectRange === 0) {
-    return gMin <= pMin && pMin <= gMax ? 100 : 0;
+  
+  // Partial fit: Grant covers some portion of project needs
+  if (grantProvides > 0 && projectNeeds > 0) {
+    const coveragePercent = (grantProvides / projectNeeds) * 100;
+    return Math.min(100, Math.round(coveragePercent));
   }
-
-  const overlapPercent = (overlapRange / projectRange) * 100;
-
-  // Bonus for perfect fit (grant fully covers project needs)
-  if (gMin <= pMin && gMax >= pMax) {
-    return Math.min(100, overlapPercent + 20);
-  }
-
-  return Math.min(100, overlapPercent);
+  
+  // No overlap
+  return 0;
 }
 
 /**

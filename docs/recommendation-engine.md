@@ -23,7 +23,7 @@ This approach provides both speed and accuracy - quickly filtering thousands of 
 │  │              │    │   + Rules    │    │              │       │
 │  └──────────────┘    └──────────────┘    └──────────────┘       │
 │                                                                  │
-│  All Grants ─▶ Eligible ─▶ Top 15 Candidates ─▶ Top 10 Final   │
+│  All Grants ─▶ Eligible ─▶ Top 20 Candidates ─▶ Final Rankings │
 │  (~100+)       (~40)       (embedding+rules)    (LLM analyzed)  │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -36,13 +36,15 @@ This approach provides both speed and accuracy - quickly filtering thousands of 
 **File:** `src/lib/recommendation-engine.ts`
 
 Filters grants based on eligibility criteria:
-- Deadline not passed
-- Status is "green" (open for applications)
-- Applicable to organisations
+- ✅ Deadline not passed
+- ✅ Status is "green" (open for applications)
+- ✅ Applicable to organisations
+
+**Rationale:** Eliminates clearly ineligible grants before expensive scoring computations.
 
 ---
 
-## Stage 2: Embedding + Rule-Based Scoring
+## Stage 2: Preliminary Scoring (Embedding + Rules)
 
 **Files:** 
 - `src/lib/recommendation-engine.ts`
@@ -52,28 +54,116 @@ Filters grants based on eligibility criteria:
 ### Preliminary Scoring Formula
 
 **With embeddings available:**
-- 50% Embedding Semantic Score
-- 30% Category Match
-- 10% Funding Fit
-- 10% Deadline Urgency
+```
+prelimScore = (embeddingScore × 0.5) + (categoryScore × 0.3) + 
+              (fundingScore × 0.1) + (deadlineScore × 0.1)
+```
 
 **Without embeddings (fallback):**
-- 50% Category Match
-- 30% Funding Fit
-- 20% Deadline Urgency
+```
+prelimScore = (categoryScore × 0.5) + (fundingScore × 0.3) + (deadlineScore × 0.2)
+```
 
-### Embedding Model
-- **Model:** `gemini-embedding-001`
-- **Dimensions:** 3072
-- **Storage:** Native pgvector in Neon PostgreSQL
+### Weight Rationale
 
-### What Gets Compared
+| Score Component | Weight | Rationale |
+|-----------------|--------|-----------|
+| **Embedding Score** | 50% | Captures semantic meaning beyond keywords - understands project intent |
+| **Category Match** | 30% | Focus area alignment is critical for grant eligibility |
+| **Funding Fit** | 10% | Budget alignment matters but is often flexible |
+| **Deadline Urgency** | 10% | Prioritizes actionable grants but shouldn't dominate |
 
-| Project Field | Grant Field | Comparison |
-|--------------|-------------|------------|
+---
+
+## Score Calculation Details
+
+### 1. Category Match Score (0-100)
+
+**Source:** `calculateCategoryScore()` in recommendation-engine.ts
+
+Uses **Jaccard similarity** to compare project focus areas with grant tags:
+
+```typescript
+// Example: Project has ["Health", "Community", "Seniors"]
+// Grant has ["Health", "Education", "Community"]
+// Intersection: ["Health", "Community"] = 2
+// Union: ["Health", "Community", "Seniors", "Education"] = 4
+// Jaccard: 2/4 = 0.5 → 50%
+// Overlap bonus: +20% (any match gets bonus)
+// Final: 70%
+
+jaccardScore = (intersection.size / union.size) × 100
+overlapBonus = intersection.size > 0 ? 20 : 0
+categoryScore = min(100, jaccardScore + overlapBonus)
+```
+
+**Rationale:** Jaccard similarity handles varying list sizes fairly; overlap bonus ensures partial matches aren't penalized too harshly.
+
+---
+
+### 2. Funding Fit Score (0-100)
+
+**Source:** `calculateFundingScore()` in recommendation-engine.ts
+
+Uses **"up to max"** logic - project specifies maximum budget needed, and grants that can provide that amount or more are a perfect fit:
+
+| Scenario | Score |
+|----------|-------|
+| Grant provides ≥ project budget | 100% (perfect fit) |
+| Grant provides partial amount | Proportional (e.g. $50k/$100k = 50%) |
+| Grant has "Varies" / unknown amount | 30% (might work) |
+| No project budget specified | 50% (neutral) |
+
+```typescript
+// Example: Project needs up to $50,000
+// Grant offers $200,000 → Score: 100% (can fully cover)
+// Grant offers $25,000 → Score: 50% (covers half)
+// Grant offers "Varies" → Score: 30% (unknown)
+```
+
+**Rationale:** Projects need "up to X" amount - any grant that can fully fund the project is a perfect match. Partial funding still has value.
+
+---
+
+### 3. Deadline Urgency Score (0-100)
+
+**Source:** `calculateDeadlineScore()` in recommendation-engine.ts
+
+Prioritizes grants with approaching deadlines (more actionable):
+
+| Days Until Deadline | Score | Urgency Level |
+|---------------------|-------|---------------|
+| ≤ 7 days | 100% | 🔴 Very urgent |
+| 8-14 days | 80% | 🟠 Urgent |
+| 15-30 days | 60% | 🟡 Moderate |
+| 31-60 days | 40% | 🟢 Planning |
+| 61-90 days | 30% | ⚪ Future |
+| > 90 days | 20% | ⚪ Long-term |
+
+**Rationale:** Urgent grants need immediate attention but shouldn't overwhelm long-term planning.
+
+---
+
+### 4. Embedding Semantic Score (0-100)
+
+**Source:** `src/lib/semantic-comparison.ts`
+
+Uses **cosine similarity** between vector embeddings to measure conceptual alignment:
+
+```typescript
+// Cosine similarity returns -1 to +1
+// Convert to 0-100 scale:
+score = ((cosineSimilarity + 1) / 2) × 100
+```
+
+**Section Comparisons:**
+| Project Field | Grant Field | Purpose |
+|--------------|-------------|---------|
 | `description` | `objectives` | Purpose alignment |
 | `targetPopulation` | `whoCanApply` | Eligibility fit |
-| `deliverables` | `requiredDocs` | Deliverables match |
+| `deliverables` | `requiredDocs` | Output alignment |
+
+**Rationale:** Embeddings capture semantic meaning beyond keyword matching - "elderly wellness" and "senior health" score highly even without exact word matches.
 
 ---
 
@@ -81,12 +171,12 @@ Filters grants based on eligibility criteria:
 
 **File:** `src/lib/llm-relevance.ts`
 
-The top 15 candidates from Stage 2 are analyzed by **Gemini 3.0 Flash** with structured JSON output.
+The top 15 candidates from Stage 2 are analyzed by **Gemini 3 Flash** with structured JSON output.
 
 ### LLM Configuration
 ```typescript
 const response = await ai.models.generateContent({
-  model: "gemini-3.0-flash",
+  model: "gemini-3-flash-preview",
   contents: prompt,
   config: {
     responseMimeType: "application/json",
@@ -96,23 +186,80 @@ const response = await ai.models.generateContent({
 });
 ```
 
-### Scoring Dimensions
+### LLM Scoring Dimensions
 
-| Score | Range | Description |
-|-------|-------|-------------|
-| **purposeAlignment** | 0-100 | Do project goals align with grant objectives? |
-| **eligibilityFit** | 0-100 | Would project qualify for this grant? |
-| **impactRelevance** | 0-100 | Do expected outcomes match grant goals? |
-| **overall** | 0-100 | Weighted composite score |
-| **reasoning** | text | 1-2 sentence explanation |
+| Score | Weight in LLM Overall | Description |
+|-------|----------------------|-------------|
+| **purposeAlignment** | 50% | Do project activities align with grant objectives? |
+| **eligibilityFit** | 25% | Would project/org qualify for this grant? |
+| **impactRelevance** | 25% | Do expected outcomes serve grant mission? |
 
-### Strict Scoring Guidelines
+### LLM Score Rubric
 
-The LLM is instructed to be **strict**:
-- A grant for "nursing leadership training" does NOT match "senior health education" just because both mention seniors
-- Low scores (0-30) for fundamental mismatches
-- Medium scores (40-60) for partial alignment
-- High scores (70-100) only for genuine alignment
+The LLM is instructed with explicit scoring guidelines:
+
+**Purpose Alignment:**
+- 0-20: Completely different purpose (e.g., arts grant for healthcare project)
+- 21-40: Same sector but different activities (nursing training vs senior wellness)
+- 41-60: Related activities with some overlap
+- 61-80: Strong alignment with minor differences
+- 81-100: Near-perfect match in purpose and activities
+
+**Eligibility Fit:**
+- 0-20: Clearly ineligible
+- 21-40: Probably ineligible, missing key requirements
+- 41-60: Uncertain eligibility
+- 61-80: Likely eligible with good fit
+- 81-100: Perfect eligibility match
+
+**Impact Relevance:**
+- 0-20: Outcomes completely unrelated to grant goals
+- 21-40: Some thematic overlap but different outcomes
+- 41-60: Moderate overlap in expected impact
+- 61-80: Strong outcome alignment
+- 81-100: Outcomes directly serve grant's mission
+
+---
+
+## Final Score Calculation
+
+**The final overall score blends LLM and rule-based scores:**
+
+```
+finalScore = (LLM_overall × 0.6) + (prelimScore × 0.4)
+```
+
+| Component | Weight | Rationale |
+|-----------|--------|-----------|
+| **LLM Score** | 60% | AI understands nuanced alignment better than rules |
+| **Preliminary Score** | 40% | Rules catch objective factors LLM might miss (funding, deadline) |
+
+**Fallback:** If LLM scoring fails for a grant, uses `prelimScore` only.
+
+---
+
+## Data Caching
+
+### What Gets Cached (in `ProjectRecommendation` table)
+
+| Field | Description |
+|-------|-------------|
+| `overallScore` | Final blended score |
+| `categoryScore` | Focus area match |
+| `fundingScore` | Budget alignment |
+| `semanticScore` | Embedding similarity |
+| `deadlineScore` | Urgency score |
+| `llmPurpose` | LLM purpose alignment (0-100) |
+| `llmEligibility` | LLM eligibility fit (0-100) |
+| `llmImpact` | LLM impact relevance (0-100) |
+| `llmOverall` | LLM composite score (0-100) |
+| `matchReason` | LLM reasoning text |
+
+### Cache Invalidation
+
+Cache is invalidated when:
+- Project is updated
+- New grants are added to the database
 
 ---
 
@@ -124,47 +271,15 @@ POST /api/projects/{id}/recommend
 Content-Type: application/json
 
 {
-  "maxResults": 10,
+  "maxResults": 20,
   "minScore": 30,
-  "forceRefresh": false
+  "forceRefresh": true
 }
 ```
 
-**Response:**
-```json
-{
-  "recommendations": [
-    {
-      "grant": { "id", "title", "agency", "amount", "deadline" },
-      "scores": {
-        "overall": 75,
-        "category": 87,
-        "funding": 30,
-        "deadline": 20,
-        "semantic": 80
-      },
-      "llmScores": {
-        "purposeAlignment": 82,
-        "eligibilityFit": 70,
-        "impactRelevance": 65,
-        "overall": 75,
-        "reasoning": "Project focuses on senior health education which aligns..."
-      },
-      "matchReason": "Strong purpose alignment with community care focus..."
-    }
-  ],
-  "meta": { "totalMatches": 10, "cached": false }
-}
-```
-
-### Enhance Recommendations (Standalone LLM)
+### Get Cached Recommendations
 ```http
-POST /api/projects/{id}/recommend/enhance
-Content-Type: application/json
-
-{
-  "grantIds": ["id1", "id2", "id3"]
-}
+GET /api/projects/{id}/recommend
 ```
 
 ### AI Gap Analysis
@@ -179,39 +294,6 @@ Content-Type: application/json
 
 ---
 
-## Embedding System
-
-### Database Columns (pgvector)
-
-**Grant Table:**
-| Column | Type | Source |
-|--------|------|--------|
-| `objectivesEmbed` | vector(3072) | `objectives` or `description` |
-| `eligibilityEmbed` | vector(3072) | `whoCanApply` |
-| `fundingEmbed` | vector(3072) | `fundingInfo` |
-| `deliverablesEmbed` | vector(3072) | `deliverables` or `requiredDocs` |
-
-**Project Table:**
-| Column | Type | Source |
-|--------|------|--------|
-| `goalEmbed` | vector(3072) | `description` |
-| `populationEmbed` | vector(3072) | `targetPopulation` |
-| `outcomesEmbed` | vector(3072) | `expectedOutcomes` |
-| `deliverablesEmbed` | vector(3072) | `deliverables` |
-
-### Generating Embeddings
-
-**Grant embeddings (batch):**
-```bash
-npm run grants:embed
-```
-
-**Project embeddings (automatic):**
-- Generated on project create via API
-- Regenerated on project update if content fields change
-
----
-
 ## Performance Considerations
 
 ### Rate Limiting
@@ -220,11 +302,9 @@ npm run grants:embed
 - Only top 15 candidates analyzed by LLM (not all grants)
 
 ### Caching
-- Recommendations cached in database
-- Cache invalidated when:
-  - Project is updated
-  - New grants are added
-- Semantic scores calculated fresh even for cached recommendations
+- All scores (including LLM) cached in database
+- First load shows cached data instantly
+- Click "Refresh" to regenerate with fresh LLM analysis
 
 ---
 
@@ -234,17 +314,6 @@ npm run grants:embed
 |----------|----------|-------------|
 | `GEMINI_API_KEY` | Yes | For embeddings + LLM scoring |
 | `DATABASE_URL` | Yes | PostgreSQL with pgvector enabled |
-
----
-
-## npm Scripts
-
-| Script | Description |
-|--------|-------------|
-| `npm run grants:import` | Fetch grants from OurSG API |
-| `npm run grants:embed` | Generate embeddings for grants |
-| `npm run grants:reset` | Clear all grant data |
-| `npm run db:vector` | Enable pgvector extension |
 
 ---
 
@@ -265,7 +334,7 @@ npm run grants:embed
 
 ### LLM Scores Not Showing
 1. Check `GEMINI_API_KEY` is set
-2. Click "Update" to force fresh recommendations
+2. Click "Refresh" to regenerate recommendations
 3. Check browser console for API errors
 
 ### Embeddings Not Working

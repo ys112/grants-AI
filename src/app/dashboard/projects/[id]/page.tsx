@@ -236,7 +236,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </Stack>
         {(project.fundingMin || project.fundingMax) && (
           <Typography variant="body2" color="text.secondary">
-            Funding: ${project.fundingMin?.toLocaleString() || '0'} - ${project.fundingMax?.toLocaleString() || 'No limit'}
+            Budget: Up to ${(project.fundingMax || project.fundingMin)?.toLocaleString()}
           </Typography>
         )}
       </Paper>

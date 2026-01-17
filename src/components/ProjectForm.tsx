@@ -254,33 +254,22 @@ export default function ProjectForm({ initialData, mode = 'create', projectId }:
           helperText="Describe the measurable outcomes and impact you expect from this project"
         />
 
-        {/* Funding Range */}
+        {/* Budget */}
         <Box>
           <Typography variant="subtitle2" gutterBottom>
-            Funding Requirements (optional)
+            Budget Needed (optional)
           </Typography>
-          <Stack direction="row" spacing={2}>
-            <TextField
-              label="Minimum"
-              type="number"
-              value={formData.fundingMin}
-              onChange={(e) => setFormData({ ...formData, fundingMin: e.target.value })}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              }}
-              sx={{ width: 200 }}
-            />
-            <TextField
-              label="Maximum"
-              type="number"
-              value={formData.fundingMax}
-              onChange={(e) => setFormData({ ...formData, fundingMax: e.target.value })}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              }}
-              sx={{ width: 200 }}
-            />
-          </Stack>
+          <TextField
+            label="Up to"
+            type="number"
+            value={formData.fundingMax}
+            onChange={(e) => setFormData({ ...formData, fundingMax: e.target.value })}
+            InputProps={{
+              startAdornment: <InputAdornment position="start">$</InputAdornment>,
+            }}
+            helperText="Maximum funding you need - grants offering this amount or more will be matched"
+            sx={{ width: 300 }}
+          />
         </Box>
 
         {/* Status (only in edit mode) */}
