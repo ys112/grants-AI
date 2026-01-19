@@ -4,7 +4,7 @@
 
 > *Helping non-profit organizations find, evaluate, and manage funding opportunities using AI-powered recommendations.*
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-grants-ai-three.vercel.app-4ECDC4?style=for-the-badge)](https://grants-ai-three.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-grants--ai--three.vercel.app-4ECDC4?style=for-the-badge)](https://grants-ai-three.vercel.app/)
 
 [**Step-by-step guide**](docs/demo.md)
 
