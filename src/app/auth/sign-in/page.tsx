@@ -37,6 +37,12 @@ export default function SignInPage() {
           email,
           password,
           name,
+          role: 'user',
+          organizationId: '',
+          interests: '[]',
+          targetPopulation: 'general',
+          minFunding: 0,
+          orgDescription: '',
         });
         if (result.error) {
           setError(result.error.message || 'Sign up failed');

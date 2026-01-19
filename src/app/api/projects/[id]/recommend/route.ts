@@ -74,7 +74,7 @@ export async function POST(
             project: { id: project.id, name: project.name },
             recommendations: existingRecommendations.map((rec) => {
               const deadline = rec.grant.deadline;
-              const daysUntil = Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              const daysUntil = deadline ? Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
               const deadlineScore = rec.deadlineScore ?? (daysUntil <= 7 ? 100 : daysUntil <= 14 ? 80 : daysUntil <= 30 ? 60 : daysUntil <= 60 ? 40 : daysUntil <= 90 ? 30 : 20);
 
               return {
@@ -119,6 +119,7 @@ export async function POST(
     const recommendations = await getRecommendationsForProject(project, {
       maxResults,
       minScore,
+      orgDescription: session.user.orgDescription,
     });
     const processingTime = Date.now() - startTime;
 

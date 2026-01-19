@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -14,10 +14,10 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import GrantCard, { Grant } from '@/components/GrantCard';
-
-const filterTags = ['All', 'Seniors', 'Healthcare', 'Arts', 'Technology', 'Community'];
+import { useSession } from '@/lib/auth-client';
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const [selectedTag, setSelectedTag] = useState('All');
   const [trackedIds, setTrackedIds] = useState<Set<string>>(new Set());
 
-  // Fetch grants from API with timing
+  // Fetch grants from API
   useEffect(() => {
     async function fetchGrants() {
       const startTime = performance.now();
@@ -33,17 +33,11 @@ export default function DashboardPage() {
         const res = await fetch('/api/grants');
         if (!res.ok) throw new Error('Failed to fetch grants');
         const data = await res.json();
-        
+
         const endTime = performance.now();
         console.log(`[Performance] Grants API loaded in ${(endTime - startTime).toFixed(2)}ms`);
-        
-        // Add matchScore based on tag relevance (simplified scoring for demo)
-        const grantsWithScores = data.map((grant: Grant) => ({
-          ...grant,
-          matchScore: Math.floor(60 + Math.random() * 35), // 60-95 range for demo
-        }));
-        
-        setGrants(grantsWithScores);
+
+        setGrants(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load grants');
       } finally {
@@ -52,6 +46,51 @@ export default function DashboardPage() {
     }
     fetchGrants();
   }, []);
+
+  // Extract unique tags from all grants (dynamic filter tags)
+  const filterTags = useMemo(() => {
+    const allTags = new Set<string>();
+    grants.forEach((grant) => {
+      grant.tags.forEach((tag) => allTags.add(tag));
+    });
+    return ['All', ...Array.from(allTags).sort()];
+  }, [grants]);
+
+  // Calculate match score based on user profile (funding + tags match)
+  const calculateMatchScore = (grant: Grant): number => {
+    let score = 0; // Base score starts at 0
+
+    if (!session?.user) return score;
+
+    // Parse user interests from JSON string
+    let userInterests: string[] = [];
+    try {
+      const interestsStr = session.user.interests || '[]';
+      userInterests = JSON.parse(interestsStr);
+    } catch {
+      userInterests = [];
+    }
+    const userMinFunding = session.user.minFunding || 0;
+
+    // Tags match scoring (up to +70 points)
+    if (userInterests.length > 0) {
+      const matchingTags = grant.tags.filter((tag) =>
+        userInterests.some((interest) => interest.toLowerCase() === tag.toLowerCase())
+      );
+      const tagMatchPercent = matchingTags.length / Math.max(userInterests.length, 1);
+      score += Math.round(tagMatchPercent * 70);
+    }
+
+    // Funding match scoring (up to +30 points)
+    if (userMinFunding > 0 && grant.amount && grant.amount !== 'Varies') {
+      const grantAmount = parseInt(grant.amount.replace(/\D/g, '')) || 0;
+      if (grantAmount >= userMinFunding) {
+        score += 30; // Grant meets minimum funding requirement
+      }
+    }
+
+    return Math.min(score, 100); // Cap at 100
+  };
 
   // Fetch tracked grant IDs
   useEffect(() => {
@@ -64,7 +103,6 @@ export default function DashboardPage() {
           setTrackedIds(ids);
         }
       } catch (err) {
-        // Not logged in or error - ignore
         console.log('Could not fetch tracked grants:', err);
       }
     }
@@ -78,16 +116,15 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ grantId }),
       });
-      
+
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to track grant');
       }
-      
+
       setTrackedIds((prev) => new Set([...prev, grantId]));
     } catch (err) {
       console.error('Track error:', err);
-      // Could show a toast notification here
     }
   };
 
@@ -96,9 +133,9 @@ export default function DashboardPage() {
       const res = await fetch(`/api/grants/track?grantId=${grantId}`, {
         method: 'DELETE',
       });
-      
+
       if (!res.ok) throw new Error('Failed to untrack grant');
-      
+
       setTrackedIds((prev) => {
         const next = new Set(prev);
         next.delete(grantId);
@@ -109,27 +146,43 @@ export default function DashboardPage() {
     }
   };
 
-  const filteredGrants = grants
-    .filter((grant) => {
-      const matchesSearch =
-        grant.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        grant.agency.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        grant.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesTag =
-        selectedTag === 'All' || grant.tags.includes(selectedTag);
-      return matchesSearch && matchesTag;
-    })
-    .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+  // Filter and sort grants
+  const processedGrants = useMemo(() => {
+    return grants
+      .map((grant) => ({
+        ...grant,
+        matchScore: calculateMatchScore(grant),
+      }))
+      .filter((grant) => {
+        // 1. Search filtering (title, agency, description)
+        const matchesSearch =
+          !searchQuery ||
+          grant.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          grant.agency.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          grant.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+        // 2. Tag filtering (only when a specific tag is clicked)
+        const matchesTag = selectedTag === 'All' || grant.tags.includes(selectedTag);
+
+        // No interest-based filtering! Only search and tag click filter.
+        return matchesSearch && matchesTag;
+      })
+      .sort((a, b) => {
+        // Sort by match score (descending) - higher scores first
+        return (b.matchScore || 0) - (a.matchScore || 0);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grants, searchQuery, selectedTag, session]);
 
   return (
     <Box>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} gutterBottom>
-          Discover Grants
+          Grants Feed
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Find funding opportunities tailored to your organization&apos;s mission
+          Grants sorted by match score based on your organization&apos;s interests
         </Typography>
       </Box>
 
@@ -173,7 +226,7 @@ export default function DashboardPage() {
       {/* Results count */}
       {!loading && !error && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Showing {filteredGrants.length} grant{filteredGrants.length !== 1 ? 's' : ''}
+          Showing {processedGrants.length} grant{processedGrants.length !== 1 ? 's' : ''}
           {searchQuery && ` matching "${searchQuery}"`}
           {selectedTag !== 'All' && ` in ${selectedTag}`}
         </Typography>
@@ -192,13 +245,13 @@ export default function DashboardPage() {
             </Grid>
           ))}
         </Grid>
-      ) : filteredGrants.length === 0 ? (
+      ) : processedGrants.length === 0 ? (
         <Alert severity="info" sx={{ mt: 2 }}>
           No grants found matching your criteria. Try adjusting your search or filters.
         </Alert>
       ) : (
         <Grid container spacing={3}>
-          {filteredGrants.map((grant) => (
+          {processedGrants.map((grant) => (
             <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={grant.id}>
               <GrantCard
                 grant={{ ...grant, isTracked: trackedIds.has(grant.id) }}

@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const grants = await prisma.grant.findMany({
       orderBy: {
-        deadline: 'asc',
+        deadline: { sort: 'asc', nulls: 'last' },
       },
     });
 
@@ -16,7 +16,7 @@ export async function GET() {
     const grantsWithParsedTags = grants.map((grant) => ({
       ...grant,
       tags: JSON.parse(grant.tags),
-      deadline: grant.deadline.toISOString(),
+      deadline: grant.deadline ? grant.deadline.toISOString() : null,
     }));
 
     return NextResponse.json(grantsWithParsedTags);

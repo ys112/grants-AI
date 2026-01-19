@@ -53,6 +53,7 @@ interface ProjectContext {
   focusAreas: string[];
   expectedOutcomes?: string | null;
   deliverables?: string[];
+  orgDescription?: string | null; // Organization description for context
 }
 
 interface GrantContext {
@@ -79,6 +80,9 @@ export async function calculateLLMRelevance(
   }
 
   const prompt = `You are a strict grant evaluator. Your job is to HONESTLY assess if this project matches this grant.
+
+## Organization Context
+${project.orgDescription ? `**Organization Description:** ${project.orgDescription}` : ''}
 
 ## Project
 **Name:** ${project.name}
@@ -125,7 +129,8 @@ Score each dimension from 0-100:
 1. A grant for "nursing leadership development" does NOT match a project for "senior community wellness" - these are DIFFERENT activities (score Purpose < 40)
 2. Sharing keywords like "community" or "health" is NOT enough for a high score
 3. The overall score should be the WEIGHTED AVERAGE: Purpose 50% + Eligibility 25% + Impact 25%
-4. Be honest - it's better to give low scores than to overrate mismatched grants`;
+4. Be honest - it's better to give low scores than to overrate mismatched grants
+5. Consider the organization's mission and how well the grant aligns with it`;
 
   try {
     const response = await ai.models.generateContent({
