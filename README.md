@@ -6,6 +6,8 @@
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-grantsync.vercel.app-4ECDC4?style=for-the-badge)](https://grantsync.vercel.app)
 
+[**Step-by-step guide**](docs/demo.md)
+
 ---
 
 ## 👥 Team
@@ -197,7 +199,7 @@ GEMINI_API_KEY="your-google-ai-api-key"
 
 ## 📚 Documentation
 
-- [Demo Walkthrough](docs/DEMO_WALKTHROUGH.md) — Step-by-step demo guide
+- [Demo](docs/demo.md) — Step-by-step demo guide
 - [Recommendation Engine](docs/recommendation-engine.md) — AI pipeline details
 - [Grant Import](docs/grant-import.md) — Data pipeline documentation
 

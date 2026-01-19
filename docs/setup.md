@@ -124,21 +124,6 @@ npm run grants:import
 npm run grants:embed
 ```
 
-### Option 2: Google Cloud Run
-
-See [Dockerfile](../Dockerfile) for containerized deployment.
-
-```bash
-# Build and deploy
-gcloud run deploy grantsync \
-  --source . \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars "DATABASE_URL=...,GEMINI_API_KEY=..."
-```
-
----
-
 ## Updating Grants
 
 ### Manual Update
