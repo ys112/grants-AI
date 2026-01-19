@@ -54,7 +54,7 @@ GrantSync is an intelligent platform that:
 - Track project status: Planning → Active → Funded → Completed
 
 ### 🔍 Grant Discovery
-- Auto-import grants from OurSG Grants Portal
+- Auto-import grants from OurSG Grants Portal with vercel cron job
 - Filter by category, funding range, deadline
 - Real-time grant status with color-coded deadline urgency
 
@@ -197,7 +197,6 @@ GEMINI_API_KEY="your-google-ai-api-key"
 
 ## 📚 Documentation
 
-- [Pitch Deck](docs/PITCH.md) — Hackathon presentation
 - [Demo Walkthrough](docs/DEMO_WALKTHROUGH.md) — Step-by-step demo guide
 - [Recommendation Engine](docs/recommendation-engine.md) — AI pipeline details
 - [Grant Import](docs/grant-import.md) — Data pipeline documentation
@@ -214,7 +213,3 @@ GEMINI_API_KEY="your-google-ai-api-key"
 | No fit analysis | AI-powered fit scoring |
 
 ---
-
-## 📄 License
-
-MIT License — Built with ❤️ for the Tsao Foundation

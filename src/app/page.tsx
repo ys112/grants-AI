@@ -83,21 +83,12 @@ export default function HomePage() {
           >
             GrantSync
           </Typography>
-          <Stack direction="row" spacing={2}>
-            <Button
-              variant="outlined"
-              onClick={() => router.push('/auth/sign-in')}
-              sx={{ borderColor: 'rgba(78, 205, 196, 0.5)' }}
-            >
-              Sign In
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => router.push('/auth/sign-in')}
-            >
-              Get Started
-            </Button>
-          </Stack>
+          <Button
+            variant="contained"
+            onClick={() => router.push('/auth/sign-in')}
+          >
+            Get Started
+          </Button>
         </Box>
 
         {/* Hero Section */}
@@ -144,32 +135,18 @@ export default function HomePage() {
             Discover, track, and manage grants tailored to your nonprofit&apos;s mission.
             Built for the Tsao Foundation ecosystem.
           </Typography>
-          <Stack direction="row" spacing={2} justifyContent="center">
-            <Button
-              variant="contained"
-              size="large"
-              onClick={() => router.push('/auth/sign-in')}
-              sx={{
-                px: 4,
-                py: 1.5,
-                fontSize: '1.1rem',
-              }}
-            >
-              Start Free
-            </Button>
-            <Button
-              variant="outlined"
-              size="large"
-              sx={{
-                px: 4,
-                py: 1.5,
-                fontSize: '1.1rem',
-                borderColor: 'rgba(78, 205, 196, 0.5)',
-              }}
-            >
-              Watch Demo
-            </Button>
-          </Stack>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => router.push('/auth/sign-in')}
+            sx={{
+              px: 5,
+              py: 1.5,
+              fontSize: '1.1rem',
+            }}
+          >
+            Get Started
+          </Button>
         </Box>
 
         {/* Features Section */}
