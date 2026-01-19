@@ -1,29 +1,29 @@
 'use client';
 
-import { Box, Container, Typography, Button, Stack, Card, CardContent, Grid } from '@mui/material';
+import { Box, Container, Typography, Button, Card, CardContent, Grid } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import SearchIcon from '@mui/icons-material/Search';
-import GroupsIcon from '@mui/icons-material/Groups';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
 
 export default function HomePage() {
   const router = useRouter();
 
   const features = [
     {
-      icon: <SearchIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
-      title: 'Smart Discovery',
-      description: 'AI-powered grant matching based on your organization\'s mission and needs.',
+      icon: <AutoAwesomeIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
+      title: 'AI-Powered Matching',
+      description: '2-stage hybrid pipeline using embeddings + LLM analysis to find grants that truly fit your mission.',
     },
     {
-      icon: <TrendingUpIcon sx={{ fontSize: 40, color: 'secondary.main' }} />,
-      title: 'Track Progress',
-      description: 'Kanban-style board to manage your grant applications from discovery to success.',
+      icon: <AssessmentIcon sx={{ fontSize: 40, color: 'secondary.main' }} />,
+      title: 'Gap Analysis Reports',
+      description: 'Get AI-generated insights on strengths, gaps, and actionable recommendations for each grant.',
     },
     {
-      icon: <GroupsIcon sx={{ fontSize: 40, color: 'success.main' }} />,
-      title: 'Ecosystem Collaboration',
-      description: 'Share opportunities across your organization network with parent-child hierarchy.',
+      icon: <ViewKanbanIcon sx={{ fontSize: 40, color: 'success.main' }} />,
+      title: 'Application Tracking',
+      description: 'Kanban-style workflow with deadline alerts to manage grants from discovery to approval.',
     },
   ];
 
