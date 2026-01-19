@@ -340,12 +340,15 @@ export default function TrackedGrantsPage() {
                           size="small"
                           variant="outlined"
                           color={
-                            Math.ceil(
-                              (new Date(grant.deadline).getTime() - Date.now()) /
-                              (1000 * 60 * 60 * 24)
-                            ) <= 7
-                              ? 'error'
-                              : 'default'
+                            (() => {
+                              const days = Math.ceil(
+                                (new Date(grant.deadline).getTime() - Date.now()) /
+                                (1000 * 60 * 60 * 24)
+                              );
+                              if (days <= 7) return 'error';
+                              if (days <= 14) return 'warning';
+                              return 'primary';
+                            })()
                           }
                           sx={{ fontSize: '0.7rem' }}
                         />

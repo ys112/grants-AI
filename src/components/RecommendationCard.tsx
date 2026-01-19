@@ -162,10 +162,10 @@ export default function RecommendationCard({
               color={getScoreColor(scores.overall)}
               size="small"
             />
-            {daysUntil !== null && daysUntil <= 14 && (
+            {daysUntil !== null && daysUntil > 0 && (
               <Chip
                 label={`${daysUntil}d left`}
-                color="warning"
+                color={daysUntil <= 7 ? 'error' : daysUntil <= 14 ? 'warning' : 'primary'}
                 size="small"
                 variant="outlined"
               />

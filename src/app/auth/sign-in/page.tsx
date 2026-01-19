@@ -216,59 +216,6 @@ export default function SignInPage() {
               </Typography>
             </Box>
 
-            {/* Demo Credentials */}
-            {!isSignUp && (
-              <Box
-                sx={{
-                  mt: 3,
-                  p: 2,
-                  bgcolor: 'rgba(78, 205, 196, 0.08)',
-                  borderRadius: 2,
-                  border: '1px solid rgba(78, 205, 196, 0.2)',
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="primary.main"
-                  sx={{ fontWeight: 600, display: 'block', mb: 1.5 }}
-                >
-                  🔑 DEMO CREDENTIALS
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {[
-                    { email: 'admin@tsao.org', password: 'admin123', label: 'Admin' },
-                    { email: 'partner@huamei.org', password: 'partner123', label: 'Partner' },
-                    { email: 'demo@grantsync.com', password: 'demo123', label: 'Demo' },
-                  ].map((cred) => (
-                    <Button
-                      key={cred.email}
-                      size="small"
-                      variant="outlined"
-                      onClick={() => {
-                        setEmail(cred.email);
-                        setPassword(cred.password);
-                      }}
-                      sx={{
-                        justifyContent: 'space-between',
-                        textTransform: 'none',
-                        borderColor: 'rgba(78, 205, 196, 0.3)',
-                        '&:hover': {
-                          borderColor: 'primary.main',
-                          bgcolor: 'rgba(78, 205, 196, 0.1)',
-                        },
-                      }}
-                    >
-                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                        {cred.label}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {cred.email}
-                      </Typography>
-                    </Button>
-                  ))}
-                </Box>
-              </Box>
-            )}
           </CardContent>
         </Card>
 

@@ -40,6 +40,7 @@ export default function SettingsPage() {
   const { data: session, refetch } = useSession();
   const [interests, setInterests] = useState<string[]>([]);
   const [minFunding, setMinFunding] = useState<string>('');
+  const [orgDescription, setOrgDescription] = useState<string>('');
   const [savedMessage, setSavedMessage] = useState(false);
 
   // Sync form state when session data is loaded
@@ -55,6 +56,7 @@ export default function SettingsPage() {
       }
 
       setMinFunding(session.user.minFunding?.toString() || '');
+      setOrgDescription(session.user.orgDescription || '');
     }
   }, [session]);
 
@@ -68,6 +70,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           interests: JSON.stringify(interests),
           minFunding: parseInt(minFunding, 10) || null,
+          orgDescription: orgDescription || null,
         }),
       });
 
@@ -114,10 +117,20 @@ export default function SettingsPage() {
               fullWidth
             />
             <TextField
-              label="Organization"
+              label="Organization Name"
               value="Tsao Foundation"
               disabled
               fullWidth
+            />
+            <TextField
+              label="Organization Description"
+              value={orgDescription}
+              onChange={(e) => setOrgDescription(e.target.value)}
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Describe your organization's mission, focus areas, and the communities you serve..."
+              helperText="This helps our AI provide more personalized grant recommendations"
             />
           </Stack>
         </CardContent>
