@@ -25,7 +25,7 @@ Non-profit organizations struggle to find relevant grants:
 
 GrantSync is an intelligent platform that:
 
-1. **Automatically imports** grants from government portals (OurSG)
+1. **Automatically imports** grants from government portals (OurSG) using vercel cron job
 2. **Uses AI to match** grants to your specific projects with explainable scores
 3. **Analyzes gaps** and provides recommendations to strengthen applications
 4. **Tracks applications** from discovery to approval in a Kanban workflow
@@ -67,7 +67,7 @@ GrantSync is an intelligent platform that:
 │   (Pre-filter)  │     │   (60% weight)  │     │   + Reasoning   │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
      Fast                    Accurate               Actionable
-   100→15 grants           15→10 grants          With explanations
+   100→20 grants           20→10 grants          With explanations
 ```
 
 ### Scoring Formula
