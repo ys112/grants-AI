@@ -24,6 +24,7 @@ import {
 import { useRouter, usePathname } from 'next/navigation';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
+import FolderIcon from '@mui/icons-material/Folder';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -33,6 +34,7 @@ const drawerWidth = 260;
 
 const navItems = [
   { label: 'Grant Feed', icon: <DashboardIcon />, path: '/dashboard' },
+  { label: 'My Projects', icon: <FolderIcon />, path: '/dashboard/projects' },
   { label: 'Tracked Grants', icon: <BookmarkIcon />, path: '/dashboard/tracked' },
   { label: 'Settings', icon: <SettingsIcon />, path: '/dashboard/settings' },
 ];

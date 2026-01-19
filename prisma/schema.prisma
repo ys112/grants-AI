@@ -30,6 +30,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   trackedGrants TrackedGrant[]
+  projects      Project[]
 }
 
 model Session {
@@ -83,20 +84,48 @@ model Grant {
   url         String?
   tags        String   // JSON array: ["Arts", "Seniors", "Healthcare"]
   
+  // Eligibility fields (from scraped data)
+  status      String   @default("green") // green = open, red = closed
+  applicableTo String  @default("[\"organisation\"]") // JSON: ["individual", "organisation"]
+  
   // Enhanced fields for filtering
   issueArea   String?  // Primary issue area: arts, healthcare, seniors, etc.
   eligibilityCriteria String? @db.Text // JSON array of eligibility requirements
   kpis        String?  @db.Text // JSON array of expected KPIs/outcomes
   grantDuration Int?   // Duration in months
   
+  // Parsed HTML sections (for semantic matching)
+  objectives    String? @db.Text // What the grant supports (from guideline_html)
+  whoCanApply   String? @db.Text // Eligibility section
+  whenToApply   String? @db.Text // Timeline/deadline info
+  fundingInfo   String? @db.Text // How much funding available
+  requiredDocs  String? @db.Text // JSON: required documents list (from template_html)
+  deliverables  String? // JSON array from API
+  
+  // Raw HTML for reference
+  guidelineHtml String? @db.Text
+  templateHtml  String? @db.Text
+  
+  // Contact info
+  email         String?
+  phone         String?
+  address       String?
+  
   // Scraping metadata
   sourceId    String?  @unique // Unique ID from source for deduplication
   scrapedAt   DateTime? // When this grant was last scraped
+  
+  // Section embeddings (pgvector - 3072 dimensions for Gemini gemini-embedding-001)
+  objectivesEmbed    Unsupported("vector(3072)")?  // Embedding for objectives/purpose
+  eligibilityEmbed   Unsupported("vector(3072)")?  // Embedding for whoCanApply
+  fundingEmbed       Unsupported("vector(3072)")?  // Embedding for fundingInfo
+  deliverablesEmbed  Unsupported("vector(3072)")?  // Embedding for deliverables/requiredDocs
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   trackedBy   TrackedGrant[]
+  recommendations ProjectRecommendation[]
 }
 
 model TrackedGrant {
@@ -121,4 +150,81 @@ model Organization {
   parentId  String?  // For Tsao parent-child hierarchy
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Project-based grant recommendation models
+model Project {
+  id                String   @id @default(cuid())
+  userId            String
+  organizationId    String?
+  
+  // Core info
+  name              String
+  description       String   @db.Text
+  
+  // Matching criteria (aligned with grant fields)
+  targetPopulation  String   // seniors, youth, disabled, low-income, general
+  focusAreas        String   // JSON: ["Healthcare", "Social Service", "Community"]
+  deliverables      String?  // JSON: ["Classes/Seminar/Workshop", "Research"]
+  
+  // Funding parameters
+  fundingMin        Int?     // Minimum funding needed
+  fundingMax        Int?     // Maximum funding needed
+  
+  // Timeline
+  startDate         DateTime?
+  endDate           DateTime?
+  duration          Int?     // Duration in months
+  
+  // Additional context for semantic matching
+  expectedOutcomes  String?  @db.Text // KPIs, goals, expected impact
+  
+  // Status & tracking
+  status            String   @default("planning") // planning, active, funded, completed
+  priority          String   @default("medium")   // low, medium, high
+  
+  // Section embeddings (pgvector - 3072 dimensions for Gemini gemini-embedding-001)
+  goalEmbed         Unsupported("vector(3072)")?  // Embedding for description/goal
+  populationEmbed   Unsupported("vector(3072)")?  // Embedding for targetPopulation
+  outcomesEmbed     Unsupported("vector(3072)")?  // Embedding for expectedOutcomes
+  deliverablesEmbed Unsupported("vector(3072)")?  // Embedding for deliverables
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recommendations   ProjectRecommendation[]
+}
+
+model ProjectRecommendation {
+  id            String   @id @default(cuid())
+  projectId     String
+  grantId       String
+  
+  // Scoring (0-100 scale)
+  overallScore  Float    // Composite weighted score
+  categoryScore Float?   // Focus areas match score
+  fundingScore  Float?   // Funding range overlap score
+  semanticScore Float?   // Description similarity score
+  deadlineScore Float?   // Deadline urgency score
+  
+  // LLM Scores (0-100 scale)
+  llmPurpose    Float?   // LLM purpose alignment score
+  llmEligibility Float?  // LLM eligibility fit score
+  llmImpact     Float?   // LLM impact relevance score
+  llmOverall    Float?   // LLM overall score
+  
+  // Status tracking
+  status        String   @default("new") // new, reviewed, applied, dismissed
+  
+  // LLM-generated explanation
+  matchReason   String?  @db.Text
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  grant         Grant    @relation(fields: [grantId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, grantId])
 }
