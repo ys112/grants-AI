@@ -10,17 +10,6 @@
 
 ---
 
-## 👥 Team
-
-| Name | Role |
-|------|------|
-| **Yong Yu Sian** | Full-Stack Developer |
-| **Nam Dohyun** | Frontend Developer |
-| **Edward Rafael** | Backend Developer |
-| **Glenn Chew** | Data Engineer |
-
----
-
 ## 🎯 The Problem
 
 Non-profit organizations struggle to find relevant grants:
@@ -215,3 +204,14 @@ GEMINI_API_KEY="your-google-ai-api-key"
 | No fit analysis | AI-powered fit scoring |
 
 ---
+
+## 👥 Team
+
+Built by HMGeeks:
+- Yong Yu Sian
+- Nam Dohyun
+- Edward Rafael
+- Glenn Chew
+
+---
+
