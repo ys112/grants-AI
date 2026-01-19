@@ -22,7 +22,7 @@ export interface Grant {
   title: string;
   agency: string;
   amount: string;
-  deadline: string;
+  deadline: string | null;
   description: string;
   tags: string[];
   url?: string;
@@ -37,15 +37,26 @@ interface GrantCardProps {
 }
 
 export default function GrantCard({ grant, onTrack, onUntrack }: GrantCardProps) {
-  const daysUntilDeadline = Math.ceil(
-    (new Date(grant.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  );
-  const deadlineProgress = Math.max(0, Math.min(100, (30 - daysUntilDeadline) / 30 * 100));
+  // Handle null deadline
+  const hasDeadline = grant.deadline !== null && grant.deadline !== undefined;
+  const daysUntilDeadline = hasDeadline
+    ? Math.ceil((new Date(grant.deadline!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const deadlineProgress = daysUntilDeadline !== null
+    ? Math.max(0, Math.min(100, (30 - daysUntilDeadline) / 30 * 100))
+    : 0;
   
   const getDeadlineColor = () => {
+    if (daysUntilDeadline === null) return 'primary';
     if (daysUntilDeadline <= 7) return 'error';
     if (daysUntilDeadline <= 14) return 'warning';
     return 'primary';
+  };
+
+  const getDeadlineText = () => {
+    if (daysUntilDeadline === null) return 'Open';
+    if (daysUntilDeadline > 0) return `${daysUntilDeadline} days left`;
+    return 'Expired';
   };
 
   const getMatchBadgeColor = (score: number) => {
@@ -69,14 +80,21 @@ export default function GrantCard({ grant, onTrack, onUntrack }: GrantCardProps)
       {grant.matchScore !== undefined && grant.matchScore > 0 && (
         <Chip
           label={`${grant.matchScore}% Match`}
-          color={getMatchBadgeColor(grant.matchScore)}
           size="small"
           sx={{
             position: 'absolute',
             top: -10,
             right: 16,
             fontWeight: 600,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            color: '#fff',
+            backgroundColor: grant.matchScore >= 80 
+              ? '#2e7d32'  // green
+              : grant.matchScore >= 60 
+                ? '#4ecdc4'  // teal/primary
+                : grant.matchScore >= 40 
+                  ? '#ed6c02'  // orange/warning
+                  : '#666',    // gray/default
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
           }}
         />
       )}
@@ -126,21 +144,23 @@ export default function GrantCard({ grant, onTrack, onUntrack }: GrantCardProps)
                   color: getDeadlineColor() + '.main',
                 }}
               >
-                {daysUntilDeadline > 0 ? `${daysUntilDeadline} days left` : 'Expired'}
+                {getDeadlineText()}
               </Typography>
             </Stack>
           </Tooltip>
         </Stack>
 
-        {/* Deadline Progress Bar */}
-        <Box sx={{ mb: 2 }}>
-          <LinearProgress
-            variant="determinate"
-            value={deadlineProgress}
-            color={getDeadlineColor()}
-            sx={{ height: 6, borderRadius: 3 }}
-          />
-        </Box>
+        {/* Deadline Progress Bar - only show if has deadline */}
+        {hasDeadline && (
+          <Box sx={{ mb: 2 }}>
+            <LinearProgress
+              variant="determinate"
+              value={deadlineProgress}
+              color={getDeadlineColor()}
+              sx={{ height: 6, borderRadius: 3 }}
+            />
+          </Box>
+        )}
 
         {/* Description */}
         <Typography

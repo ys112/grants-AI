@@ -65,45 +65,51 @@ export async function POST(
     const projectFocusAreas = JSON.parse(project.focusAreas || "[]");
     const projectDeliverables = JSON.parse(project.deliverables || "[]");
     const grantTags = JSON.parse(grant.tags || "[]");
+    
+    // Get organization description from user
+    const orgDescription = session.user.orgDescription || null;
 
     // Build context for Gemini
     const prompt = `You are an expert grant advisor helping non-profit organizations improve their grant applications.
 
-## Project Details
-**Name:** ${project.name}
-**Description:** ${project.description}
-**Target Population:** ${project.targetPopulation}
-**Focus Areas:** ${projectFocusAreas.join(", ")}
-**Expected Deliverables:** ${projectDeliverables.join(", ") || "Not specified"}
-**Expected Outcomes:** ${project.expectedOutcomes || "Not specified"}
-**Funding Needed:** $${project.fundingMin?.toLocaleString() || "?"} - $${project.fundingMax?.toLocaleString() || "?"}
+    ## Organization Context
+    ${orgDescription ? `**About the Organization:** ${orgDescription}` : ''}
 
-## Grant Details
-**Name:** ${grant.title}
-**Agency:** ${grant.agency}
-**Description:** ${grant.description}
-**Objectives:** ${grant.objectives || "Not specified"}
-**Eligibility:** ${grant.whoCanApply || "Not specified"}
-**Funding Available:** ${grant.fundingInfo || grant.amount || "Not specified"}
-**Focus Areas:** ${grantTags.join(", ")}
-**Required Documents:** ${grant.requiredDocs || "Not specified"}
-**Deadline:** ${grant.deadline?.toLocaleDateString() || "Not specified"}
+    ## Project Details
+    **Name:** ${project.name}
+    **Description:** ${project.description}
+    **Target Population:** ${project.targetPopulation}
+    **Focus Areas:** ${projectFocusAreas.join(", ")}
+    **Expected Deliverables:** ${projectDeliverables.join(", ") || "Not specified"}
+    **Expected Outcomes:** ${project.expectedOutcomes || "Not specified"}
+    **Funding Needed:** $${project.fundingMin?.toLocaleString() || "?"} - $${project.fundingMax?.toLocaleString() || "?"}
 
----
+    ## Grant Details
+    **Name:** ${grant.title}
+    **Agency:** ${grant.agency}
+    **Description:** ${grant.description}
+    **Objectives:** ${grant.objectives || "Not specified"}
+    **Eligibility:** ${grant.whoCanApply || "Not specified"}
+    **Funding Available:** ${grant.fundingInfo || grant.amount || "Not specified"}
+    **Focus Areas:** ${grantTags.join(", ")}
+    **Required Documents:** ${grant.requiredDocs || "Not specified"}
+    **Deadline:** ${grant.deadline?.toLocaleDateString() || "Not specified"}
 
-Provide a detailed analysis with the following sections:
+    ---
 
-1. **Match Assessment** (2-3 sentences): Overall how well does this project align with the grant?
+    Provide a detailed analysis with the following sections:
 
-2. **Strengths** (bullet points): What aspects of the project align well with the grant requirements?
+    1. **Match Assessment** (2-3 sentences): Overall how well does this project align with the grant?
 
-3. **Gaps Identified** (bullet points): What's missing or could be improved?
+    2. **Strengths** (bullet points): What aspects of the project align well with the grant requirements?
 
-4. **Recommendations** (bullet points): Specific, actionable steps to strengthen the application.
+    3. **Gaps Identified** (bullet points): What's missing or could be improved?
 
-5. **Application Tips** (bullet points): Key things to emphasize or highlight in the application.
+    4. **Recommendations** (bullet points): Specific, actionable steps to strengthen the application.
 
-Format your response as JSON with keys: matchAssessment, strengths (array), gaps (array), recommendations (array), tips (array).`;
+    5. **Application Tips** (bullet points): Key things to emphasize or highlight in the application.
+
+    Format your response as JSON with keys: matchAssessment, strengths (array), gaps (array), recommendations (array), tips (array).`;
 
     // Call Gemini
     const result = await ai.models.generateContent({

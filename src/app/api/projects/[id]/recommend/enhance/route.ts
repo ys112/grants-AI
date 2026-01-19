@@ -47,7 +47,7 @@ export async function POST(
       where: { id: { in: grantIds } },
     });
 
-    // Prepare project context
+    // Prepare project context with organization description from user session
     const projectContext = {
       name: project.name,
       description: project.description,
@@ -55,6 +55,7 @@ export async function POST(
       focusAreas: JSON.parse(project.focusAreas || "[]"),
       expectedOutcomes: project.expectedOutcomes,
       deliverables: JSON.parse(project.deliverables || "[]"),
+      orgDescription: session.user.orgDescription || null,
     };
 
     // Calculate LLM scores for each grant

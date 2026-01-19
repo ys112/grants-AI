@@ -36,7 +36,7 @@ const navItems = [
   { label: 'Grant Feed', icon: <DashboardIcon />, path: '/dashboard' },
   { label: 'My Projects', icon: <FolderIcon />, path: '/dashboard/projects' },
   { label: 'Tracked Grants', icon: <BookmarkIcon />, path: '/dashboard/tracked' },
-  { label: 'Settings', icon: <SettingsIcon />, path: '/dashboard/settings' },
+  { label: 'Profile', icon: <SettingsIcon />, path: '/dashboard/settings' },
 ];
 
 export default function DashboardLayout({
@@ -252,7 +252,7 @@ export default function DashboardLayout({
               <ListItemIcon>
                 <SettingsIcon fontSize="small" />
               </ListItemIcon>
-              Settings
+              Profile
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout}>

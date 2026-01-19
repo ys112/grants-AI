@@ -24,8 +24,9 @@ model User {
   role          String    @default("partner") // admin | partner | viewer
   organizationId String?
   interests     String?   // JSON array: ["Arts", "Healthcare", "Seniors"]
-  targetPopulation String?
+  targetPopulation String?  // @deprecated - kept for migration compatibility
   minFunding    Int?
+  orgDescription String?   // Organization description for grant matching
   
   sessions      Session[]
   accounts      Account[]
@@ -79,7 +80,7 @@ model Grant {
   amount      String   // e.g., "$50,000 - $100,000"
   amountMin   Int?     // For filtering (parsed from amount)
   amountMax   Int?     // For filtering (parsed from amount)
-  deadline    DateTime
+  deadline    DateTime? // Null for open/rolling grants
   description String   @db.Text
   url         String?
   tags        String   // JSON array: ["Arts", "Seniors", "Healthcare"]

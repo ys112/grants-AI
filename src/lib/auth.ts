@@ -64,6 +64,7 @@ export const auth = betterAuth({
       targetPopulation: { type: "string" },
       minFunding: { type: "number" },
       organizationId: { type: "string" },
+      orgDescription: { type: "string" },
     }
   },
 });

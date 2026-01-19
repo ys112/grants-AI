@@ -17,7 +17,8 @@ export const authClient = createAuthClient({
       targetPopulation: { type: "string" },
       minFunding: { type: "number" },
       role: { type: "string" },
-      organizationId: { type: "string" }
+      organizationId: { type: "string" },
+      orgDescription: { type: "string" },
     }
   })]
 });

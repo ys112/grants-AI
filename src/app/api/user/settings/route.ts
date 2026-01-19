@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@/lib/auth'; // Adjust this path based on your auth setup
+import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 
 export async function PATCH(req: Request) {
@@ -16,7 +16,7 @@ export async function PATCH(req: Request) {
 
         // 2. Parse the request body
         const body = await req.json();
-        const { interests, targetPopulation, minFunding } = body;
+        const { interests, orgDescription, minFunding } = body;
 
         // 3. Update the database
         const updatedUser = await prisma.user.update({
@@ -25,9 +25,20 @@ export async function PATCH(req: Request) {
             },
             data: {
                 interests,
-                targetPopulation,
+                orgDescription,
                 minFunding,
             },
+        });
+
+        // 4. Update the session with new user data
+        // This ensures the session cookie reflects the new values
+        await auth.api.updateUser({
+            body: {
+                interests,
+                orgDescription,
+                minFunding,
+            },
+            headers: await headers(),
         });
 
         return NextResponse.json(updatedUser);
@@ -36,3 +47,4 @@ export async function PATCH(req: Request) {
         return new NextResponse("Internal Server Error", { status: 500 });
     }
 }
+

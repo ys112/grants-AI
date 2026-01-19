@@ -36,36 +36,24 @@ const interestOptions = [
   'Social Enterprise',
 ];
 
-const populationOptions = [
-  'Seniors (60+)',
-  'Youth (Under 25)',
-  'Persons with Disabilities',
-  'Low-Income Families',
-  'Migrant Workers',
-  'General Population',
-];
-
 export default function SettingsPage() {
   const { data: session, refetch } = useSession();
   const [interests, setInterests] = useState<string[]>([]);
-  const [targetPopulation, setTargetPopulation] = useState<string>('');
   const [minFunding, setMinFunding] = useState<string>('');
   const [savedMessage, setSavedMessage] = useState(false);
 
   // Sync form state when session data is loaded
   useEffect(() => {
     if (session?.user) {
-      // TypeScript now knows 'interests' exists!
       const dbInterests = session.user.interests;
 
       try {
         const parsed = dbInterests ? JSON.parse(dbInterests) : [];
         setInterests(parsed);
-      } catch (e) {
+      } catch {
         setInterests([]);
       }
 
-      setTargetPopulation(session.user.targetPopulation || '');
       setMinFunding(session.user.minFunding?.toString() || '');
     }
   }, [session]);
@@ -79,8 +67,7 @@ export default function SettingsPage() {
         },
         body: JSON.stringify({
           interests: JSON.stringify(interests),
-          targetPopulation,
-          minFunding: parseInt(minFunding, 10),
+          minFunding: parseInt(minFunding, 10) || null,
         }),
       });
 
@@ -98,7 +85,7 @@ export default function SettingsPage() {
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} gutterBottom>
-          Settings
+          Profile
         </Typography>
         <Typography variant="body1" color="text.secondary">
           Configure your profile to get personalized grant recommendations
@@ -108,7 +95,7 @@ export default function SettingsPage() {
       {/* Profile Section */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
+          <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
             Profile Information
           </Typography>
           <Divider sx={{ my: 2, borderColor: 'rgba(78, 205, 196, 0.1)' }} />
@@ -136,11 +123,11 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Sustainability Needs Section */}
+      {/* Grant Preferences Section */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            Sustainability Needs
+          <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
+            Grant Preferences
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             These preferences help us find the most relevant grants for your organization
@@ -164,7 +151,16 @@ export default function SettingsPage() {
                         key={value}
                         label={value}
                         size="small"
-                        color="primary"
+                        sx={{
+                          backgroundColor: '#2a9d8f',
+                          color: '#fff',
+                          '& .MuiChip-deleteIcon': {
+                            color: 'rgba(255,255,255,0.7)',
+                            '&:hover': {
+                              color: '#fff',
+                            },
+                          },
+                        }}
                         onMouseDown={(e) => e.stopPropagation()}
                         onDelete={() =>
                           setInterests(interests.filter((i) => i !== value))
@@ -182,23 +178,6 @@ export default function SettingsPage() {
               </Select>
             </FormControl>
 
-            {/* Target Population */}
-            <FormControl fullWidth>
-              <InputLabel id="population-label">Target Population</InputLabel>
-              <Select
-                labelId="population-label"
-                value={targetPopulation}
-                onChange={(e) => setTargetPopulation(e.target.value)}
-                label="Target Population"
-              >
-                {populationOptions.map((option) => (
-                  <MenuItem key={option} value={option}>
-                    {option}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
             {/* Minimum Funding */}
             <TextField
               label="Minimum Funding Amount"
@@ -208,7 +187,7 @@ export default function SettingsPage() {
               InputProps={{
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
-              helperText="We'll only show grants meeting or exceeding this amount"
+              helperText="We'll prioritize grants meeting or exceeding this amount"
             />
           </Stack>
         </CardContent>
@@ -222,7 +201,7 @@ export default function SettingsPage() {
           onClick={handleSave}
           size="large"
         >
-          Save Settings
+          Save Profile
         </Button>
       </Box>
 
@@ -238,9 +217,10 @@ export default function SettingsPage() {
           severity="success"
           sx={{ width: '100%' }}
         >
-          Settings saved successfully! Your grant feed will now show personalized results.
+          Profile saved successfully! Your grant feed will now show personalized results.
         </Alert>
       </Snackbar>
     </Box>
   );
 }
+

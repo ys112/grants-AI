@@ -124,15 +124,13 @@ function parseTemplateHtml(html: string): string[] {
   return docs;
 }
 
-function parseClosingDate(closingDates: Record<string, string>): Date {
-  // Try to parse closing date, default to far future if "Open for Applications"
+function parseClosingDate(closingDates: Record<string, string>): Date | null {
+  // Try to parse closing date, return null if "Open for Applications" or missing
   const orgDate = closingDates?.organisation || closingDates?.individual;
   
   if (!orgDate || orgDate.toLowerCase().includes('open for')) {
-    // Default to 1 year from now for open grants
-    const futureDate = new Date();
-    futureDate.setFullYear(futureDate.getFullYear() + 1);
-    return futureDate;
+    // No deadline - return null
+    return null;
   }
   
   // Try to parse date string (e.g., "31 Mar 2024")
@@ -141,10 +139,8 @@ function parseClosingDate(closingDates: Record<string, string>): Date {
     return parsed;
   }
   
-  // Default fallback
-  const futureDate = new Date();
-  futureDate.setFullYear(futureDate.getFullYear() + 1);
-  return futureDate;
+  // Could not parse - return null
+  return null;
 }
 
 function parseAmount(amountVal: unknown): { min: number | null; max: number | null } {

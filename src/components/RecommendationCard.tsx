@@ -42,7 +42,7 @@ export interface Recommendation {
     title: string;
     agency: string;
     amount: string;
-    deadline: string;
+    deadline: string | null;
     description: string;
     url?: string;
   };
@@ -94,8 +94,11 @@ export default function RecommendationCard({
   onUntrack,
 }: RecommendationCardProps) {
   const { grant, scores, llmScores, matchReason } = recommendation;
-  const deadline = new Date(grant.deadline);
-  const daysUntil = Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  
+  // Handle null deadline
+  const hasDeadline = grant.deadline !== null && grant.deadline !== undefined;
+  const deadline = hasDeadline ? new Date(grant.deadline!) : null;
+  const daysUntil = deadline ? Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
 
   // Analysis state
   const [analysisOpen, setAnalysisOpen] = useState(false);
@@ -159,7 +162,7 @@ export default function RecommendationCard({
               color={getScoreColor(scores.overall)}
               size="small"
             />
-            {daysUntil <= 14 && (
+            {daysUntil !== null && daysUntil <= 14 && (
               <Chip
                 label={`${daysUntil}d left`}
                 color="warning"
@@ -185,7 +188,7 @@ export default function RecommendationCard({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <CalendarTodayIcon fontSize="small" color="action" />
               <Typography variant="body2" color="text.secondary">
-                Deadline: {deadline.toLocaleDateString()}
+                Deadline: {deadline ? deadline.toLocaleDateString() : 'Open'}
               </Typography>
             </Box>
             {grant.amount && (

@@ -37,6 +37,7 @@ export interface RecommendationOptions {
   maxResults?: number;
   minScore?: number;
   includeReasoning?: boolean;
+  orgDescription?: string | null;
 }
 
 // Available focus areas/categories (aligned with grant data)
@@ -127,7 +128,7 @@ export async function getRecommendationsForProject(
       grant.amountMin,
       grant.amountMax
     );
-    const deadlineScore = calculateDeadlineScore(grant.deadline);
+    const deadlineScore = grant.deadline ? calculateDeadlineScore(grant.deadline) : 0;
     const embeddingScore = semanticScoresMap.get(grant.id)?.overall ?? null;
 
     // Preliminary score: category + embedding weighted (no LLM yet)
@@ -162,6 +163,7 @@ export async function getRecommendationsForProject(
     focusAreas: projectFocusAreas,
     expectedOutcomes: project.expectedOutcomes,
     deliverables: projectDeliverables,
+    orgDescription: options.orgDescription,
   };
 
   const grantsForLLM = topCandidates.map(c => ({
@@ -388,11 +390,13 @@ function generateMatchReason(
   }
 
   // Deadline context
-  const daysUntilDeadline = Math.ceil(
-    (grant.deadline.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-  );
-  if (daysUntilDeadline <= 14) {
-    reasons.push(`Deadline approaching in ${daysUntilDeadline} days`);
+  if (grant.deadline) {
+    const daysUntilDeadline = Math.ceil(
+      (grant.deadline.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (daysUntilDeadline <= 14) {
+      reasons.push(`Deadline approaching in ${daysUntilDeadline} days`);
+    }
   }
 
   return reasons.join(". ") + ".";

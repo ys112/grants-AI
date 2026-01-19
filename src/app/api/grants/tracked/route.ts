@@ -38,7 +38,7 @@ export async function GET() {
       title: tracked.grant.title,
       agency: tracked.grant.agency,
       amount: tracked.grant.amount,
-      deadline: tracked.grant.deadline.toISOString(),
+      deadline: tracked.grant.deadline?.toISOString() ?? null,
       status: tracked.status,
       notes: tracked.notes,
       createdAt: tracked.createdAt.toISOString(),
