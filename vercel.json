@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/import-grants",
       "schedule": "0 2 * * 0"
+    },
+    {
+      "path": "/api/cron/notify-deadlines",
+      "schedule": "0 8 * * *"
     }
   ]
 }
