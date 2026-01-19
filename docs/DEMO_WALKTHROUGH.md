@@ -26,6 +26,15 @@ A step-by-step guide to demonstrate the GrantSync platform capabilities.
 
 ---
 
+### 3. Update Profile
+
+1. Click **"Profile"** in the sidebar
+2. Update:
+   - **Organization Description** — Helps AI provide better recommendations
+   - **Interest Areas** — Multi-select focus areas
+   - **Minimum Funding** — Filter preference
+3. Click **"Save Profile"**
+
 ### 4. Create/View a Project
 
 1. Click **"Projects"** in the sidebar
@@ -73,24 +82,3 @@ A step-by-step guide to demonstrate the GrantSync platform capabilities.
 4. Delete tracked grants with the trash icon
 
 ---
-
-### 8. Update Profile
-
-1. Click **"Profile"** in the sidebar
-2. Update:
-   - **Organization Description** — Helps AI provide better recommendations
-   - **Interest Areas** — Multi-select focus areas
-   - **Minimum Funding** — Filter preference
-3. Click **"Save Profile"**
-
----
-
-## Key Features to Highlight
-
-| Feature | What It Shows |
-|---------|---------------|
-| **AI Recommendations** | 2-stage pipeline with transparent scoring |
-| **LLM Gap Analysis** | Detailed, actionable improvement suggestions |
-| **Deadline Tracking** | Color-coded urgency (red/orange/teal) |
-| **Kanban Workflow** | End-to-end application management |
-| **Org Description** | AI personalization based on mission |
