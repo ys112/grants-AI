@@ -12,6 +12,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const apiKey = process.env.GEMINI_API_KEY;
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+const ai_model = process.env.GEMINI_MODEL;
 
 // POST /api/projects/[id]/analyze - AI gap analysis for a project-grant pair
 export async function POST(
@@ -113,7 +114,7 @@ export async function POST(
 
     // Call Gemini
     const result = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: ai_model || "gemini-3.5-flash-lite",
       contents: prompt,
     });
     const responseText = result.text || "";
